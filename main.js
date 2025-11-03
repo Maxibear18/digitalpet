@@ -34,8 +34,21 @@ function createPetWindow() {
   const { width, height } = primaryDisplay.workAreaSize;
   petWindow.setPosition(Math.floor((width - 320) / 2), Math.floor((height - 320) / 2));
 
-  // Build custom menu with Shop and Stats
+  // Build custom menu with Actions, Shop, and Stats
   const template = [
+    {
+      label: 'Actions',
+      submenu: [
+        {
+          label: 'Sleep',
+          click: () => {
+            // Placeholder for sleep action - doesn't do much right now
+            console.log('Sleep action triggered');
+            // TODO: Implement sleep functionality
+          }
+        }
+      ]
+    },
     {
       label: 'Shop',
       click: () => {
