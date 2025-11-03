@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
 
 let petWindow;
@@ -100,6 +100,13 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createPetWindow();
+  }
+});
+
+// Forward shop purchases to the pet window
+ipcMain.on('shop:buy', (_event, payload) => {
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.send('shop:spawnItem', payload);
   }
 });
 

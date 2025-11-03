@@ -1,6 +1,9 @@
+const { ipcRenderer } = require('electron');
+
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
     const panels = Array.from(document.querySelectorAll('.shop-panel'));
+    const buyButtons = Array.from(document.querySelectorAll('.buy-btn'));
 
     function setActive(tabName) {
         tabs.forEach(t => {
@@ -17,6 +20,20 @@ window.addEventListener('DOMContentLoaded', () => {
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => setActive(tab.dataset.tab));
+    });
+
+    buyButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const item = btn.dataset.item;
+            // For now map item keys to image paths
+            if (item === 'food1') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'food1',
+                    imagePath: 'sprites/food/Food1.png'
+                });
+            }
+        });
     });
 });
 

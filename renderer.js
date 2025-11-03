@@ -36,7 +36,39 @@ window.addEventListener('load', () => {
             alert('Stats placeholder');
         }
     });
+
+    // Handle spawning items from the Shop
+    ipcRenderer.on('shop:spawnItem', (_event, payload) => {
+        if (!payload || !payload.imagePath) return;
+        spawnItemAtPet(payload.imagePath);
+    });
 });
+
+function spawnItemAtPet(imagePath) {
+    if (!pet) return;
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+
+    const item = document.createElement('img');
+    item.src = imagePath;
+    item.alt = 'Item';
+    item.style.position = 'absolute';
+    item.style.imageRendering = 'pixelated';
+    item.style.pointerEvents = 'none';
+    item.style.zIndex = '90';
+    item.style.width = '48px';
+    item.style.height = 'auto';
+
+    // Center item on pet position
+    const offsetX = 24; // half of width
+    const offsetY = 24; // approximate half height
+    item.style.left = (petX + offsetX) + 'px';
+    item.style.top = (petY + offsetY) + 'px';
+
+    container.appendChild(item);
+
+    // Leave the item in place for now (no auto-removal)
+}
 
 function initializePet() {
     pet = document.getElementById('pet');
