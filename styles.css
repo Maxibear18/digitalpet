@@ -1,45 +1,27 @@
 body {
     margin: 0;
     padding: 0;
-    background: transparent;
+    background: #f5f5f5;
     overflow: hidden;
     user-select: none;
-    -webkit-app-region: drag;
+    width: 100%;
+    height: 100%;
 }
 
 .pet-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
 }
 
 #pet {
     width: 150px;
     height: auto;
-    cursor: grab;
-    -webkit-app-region: no-drag;
+    cursor: default;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-}
-
-#pet:active {
-    cursor: grabbing;
-}
-
-/* Animation for idle state */
-@keyframes float {
-    0%, 100% {
-        transform: translateY(0px);
-    }
-    50% {
-        transform: translateY(-10px);
-    }
-}
-
-#pet {
-    animation: float 3s ease-in-out infinite;
 }
 

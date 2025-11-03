@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
 let petWindow;
@@ -6,13 +6,16 @@ let petWindow;
 function createPetWindow() {
   // Create the browser window
   petWindow = new BrowserWindow({
-    width: 200,
-    height: 200,
-    frame: false, // Remove window frame
-    transparent: true, // Make window transparent
-    alwaysOnTop: true, // Keep window on top
-    skipTaskbar: true, // Don't show in taskbar
-    resizable: false, // Prevent resizing
+    width: 320,
+    height: 320,
+    frame: true, // Show window frame
+    transparent: false, // Make window opaque
+    alwaysOnTop: false, // Don't force on top
+    skipTaskbar: false, // Show in taskbar
+    resizable: true, // Allow resizing
+    minWidth: 200,
+    minHeight: 200,
+    title: 'Digital Pet',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -22,16 +25,11 @@ function createPetWindow() {
   // Load the HTML file
   petWindow.loadFile('index.html');
 
-  // Set initial position (bottom-right corner of screen)
+  // Set initial position (center of screen)
   const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
-  petWindow.setPosition(width - 220, height - 220);
-
-  // Handle window movement from renderer
-  ipcMain.handle('move-window', (event, { x, y }) => {
-    petWindow.setPosition(x, y);
-  });
+  petWindow.setPosition(Math.floor((width - 320) / 2), Math.floor((height - 320) / 2));
 }
 
 // This method will be called when Electron has finished initialization
