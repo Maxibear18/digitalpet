@@ -20,7 +20,8 @@ function createPetWindow() {
     title: 'Digital Pet',
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      backgroundThrottling: false // Prevent throttling when window is minimized
     }
   });
 
@@ -67,7 +68,8 @@ function openShopWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      backgroundThrottling: false // Prevent throttling when window is minimized
     }
   });
   // Remove app menu from the Shop window entirely
@@ -96,7 +98,8 @@ function openStatsWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      backgroundThrottling: false // Prevent throttling when window is minimized
     }
   });
   if (statsWindow && !statsWindow.isDestroyed()) {

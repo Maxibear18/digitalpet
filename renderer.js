@@ -20,6 +20,7 @@ let targetY = 50;
 const walkSpeed = 0.4; // Slower movement
 let pet = null;
 let animationRunning = false;
+let animationIntervalId = null; // Animation loop interval
 let isWalking = true; // Walking state
 let isEating = false; // Eating state
 let isHappy = false; // Happiness animation state
@@ -343,7 +344,7 @@ function updatePosition() {
 
 // Schedule next state change (walk/stop)
 function scheduleNextStateChange() {
-    const currentTime = performance.now();
+    const currentTime = Date.now();
     
     if (isWalking) {
         // Schedule stop - random duration between min and max
@@ -379,8 +380,10 @@ function checkStateChange(currentTime) {
     }
 }
 
-function animate(currentTime) {
+function animate() {
     if (!animationRunning) return;
+    
+    const currentTime = Date.now();
     
     // Check if we should change walking state
     checkStateChange(currentTime);
@@ -398,9 +401,6 @@ function animate(currentTime) {
     
     // Update position (only when walking)
     updatePosition();
-    
-    // Continue
-    requestAnimationFrame(animate);
 }
 
 function startAnimation() {
@@ -409,7 +409,10 @@ function startAnimation() {
     console.log('Starting animation...');
     animationRunning = true;
     lastSpriteUpdate = 0;
-    requestAnimationFrame(animate);
+    
+    // Use setInterval instead of requestAnimationFrame for continuous animation
+    // This ensures animation continues even when window is minimized or hidden
+    animationIntervalId = setInterval(animate, 16); // ~60fps
 }
 
 function beginEating() {
