@@ -4,6 +4,7 @@ const path = require('path');
 let petWindow;
 let shopWindow;
 let statsWindow;
+let isPetSleeping = false; // Track pet sleep state for menu updates
 
 function createPetWindow() {
   // Create the browser window
@@ -35,16 +36,29 @@ function createPetWindow() {
   petWindow.setPosition(Math.floor((width - 320) / 2), Math.floor((height - 320) / 2));
 
   // Build custom menu with Actions, Shop, and Stats
+  buildMenu();
+}
+
+// Build menu with dynamic Sleep/Wake Up button
+function buildMenu() {
   const template = [
     {
       label: 'Actions',
       submenu: [
         {
-          label: 'Sleep',
+          label: isPetSleeping ? 'Wake Up' : 'Sleep',
           click: () => {
-            // Placeholder for sleep action - doesn't do much right now
-            console.log('Sleep action triggered');
-            // TODO: Implement sleep functionality
+            if (isPetSleeping) {
+              // Wake up pet
+              if (petWindow && !petWindow.isDestroyed()) {
+                petWindow.webContents.send('action:wake');
+              }
+            } else {
+              // Put pet to sleep
+              if (petWindow && !petWindow.isDestroyed()) {
+                petWindow.webContents.send('action:sleep');
+              }
+            }
           }
         }
       ]
@@ -153,5 +167,11 @@ ipcMain.on('stats:update', (_event, payload) => {
   if (statsWindow && !statsWindow.isDestroyed()) {
     statsWindow.webContents.send('stats:update', payload);
   }
+});
+
+// Handle pet sleep state changes to update menu
+ipcMain.on('pet:sleeping', (_event, sleeping) => {
+  isPetSleeping = sleeping;
+  buildMenu(); // Rebuild menu with updated Sleep/Wake Up button
 });
 

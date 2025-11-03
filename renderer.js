@@ -10,6 +10,8 @@ const happinessSprites = [
     'sprites/botamon.png',
     'sprites/botamon 3.png'
 ];
+// Sleep sprite
+const sleepSprite = 'sprites/botamon 4.png';
 let currentSpriteIndex = 0;
 
 // Pet position
@@ -24,6 +26,7 @@ let animationIntervalId = null; // Animation loop interval
 let isWalking = true; // Walking state
 let isEating = false; // Eating state
 let isHappy = false; // Happiness animation state
+let isSleeping = false; // Sleeping state
 let currentFoodEl = null; // Currently targeted food item
 let foodItems = []; // Array of all food items on screen
 let eatingTimeoutId = null;
@@ -36,6 +39,14 @@ const HUNGER_MIN = 0;
 const HUNGER_DECAY_INTERVAL = 150000; // 2.5 minutes in milliseconds
 const HUNGER_DECAY_AMOUNT = 10; // Amount hunger decreases by
 let hungerDecayIntervalId = null;
+
+// Rest (0-100)
+let rest = 50;
+const REST_MAX = 100;
+const REST_MIN = 0;
+const REST_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
+const REST_INCREMENT_AMOUNT = 5; // Amount rest increases by while sleeping
+let restIncrementIntervalId = null;
 let lastSpriteUpdate = 0;
 let nextStateChangeTime = 0;
 const spriteUpdateInterval = 300; // milliseconds
@@ -50,6 +61,8 @@ window.addEventListener('load', () => {
     initializePet();
     // Start hunger decay system
     startHungerDecay();
+    // Initialize rest stat
+    setRest(rest);
     
     // Menu placeholders
     ipcRenderer.on('menu:open', (_event, section) => {
@@ -64,6 +77,19 @@ window.addEventListener('load', () => {
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;
         spawnFoodAndGoToIt(payload.imagePath);
+    });
+
+    // Handle sleep/wake actions
+    ipcRenderer.on('action:sleep', () => {
+        if (!isSleeping) {
+            startSleeping();
+        }
+    });
+
+    ipcRenderer.on('action:wake', () => {
+        if (isSleeping) {
+            stopSleeping();
+        }
     });
 });
 
@@ -274,6 +300,11 @@ function chooseNewTarget() {
 
 function updateSprite() {
     if (!pet) return;
+    // Sleeping takes highest priority
+    if (isSleeping) {
+        pet.src = sleepSprite;
+        return;
+    }
     // Happiness animation takes priority
     if (isHappy) {
         happinessSpriteIndex = (happinessSpriteIndex + 1) % happinessSprites.length;
@@ -287,6 +318,8 @@ function updateSprite() {
 
 function updatePosition() {
     if (!pet) return;
+    // Don't move when sleeping
+    if (isSleeping) return;
     // If food is present and not eating yet, force walking and move to nearest food
     if (foodItems.length > 0 && !isEating && hunger < HUNGER_MAX) {
         // Check if we have a valid current food target
@@ -361,8 +394,8 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
-    // Disable random state changes while eating, during happiness animation, or when food is present
-    if (isEating || isHappy || (foodItems.length > 0 && hunger < HUNGER_MAX)) return;
+    // Disable random state changes while eating, sleeping, during happiness animation, or when food is present
+    if (isEating || isSleeping || isHappy || (foodItems.length > 0 && hunger < HUNGER_MAX)) return;
     if (currentTime >= nextStateChangeTime) {
         isWalking = !isWalking;
         scheduleNextStateChange();
@@ -515,6 +548,19 @@ function setHunger(value) {
     } catch (_) {}
 }
 
+function setRest(value) {
+    rest = Math.max(REST_MIN, Math.min(REST_MAX, value));
+    // Notify main to forward update to stats window
+    try {
+        ipcRenderer.send('stats:update', { key: 'rest', value: rest, max: REST_MAX });
+    } catch (_) {}
+    
+    // Auto-wake when rest reaches 100
+    if (rest >= REST_MAX && isSleeping) {
+        stopSleeping();
+    }
+}
+
 // Start the hunger decay system - decreases hunger every 2.5 minutes
 function startHungerDecay() {
     // Clear any existing interval
@@ -559,3 +605,75 @@ window.addEventListener('resize', () => {
         chooseNewTarget();
     }
 });
+
+// Start sleeping
+function startSleeping() {
+    if (!pet || isSleeping) return;
+    
+    isSleeping = true;
+    isWalking = false;
+    isHappy = false;
+    isEating = false;
+    
+    // Change sprite to sleep sprite
+    pet.src = sleepSprite;
+    
+    // Start rest increment
+    startRestIncrement();
+    
+    // Notify main process that pet is sleeping (to update menu)
+    try {
+        ipcRenderer.send('pet:sleeping', true);
+    } catch (_) {}
+}
+
+// Stop sleeping
+function stopSleeping() {
+    if (!pet || !isSleeping) return;
+    
+    isSleeping = false;
+    
+    // Stop rest increment
+    stopRestIncrement();
+    
+    // Reset to normal sprite
+    currentSpriteIndex = 0;
+    pet.src = sprites[0];
+    
+    // Resume normal behavior
+    isWalking = true;
+    scheduleNextStateChange();
+    chooseNewTarget();
+    
+    // Notify main process that pet is awake (to update menu)
+    try {
+        ipcRenderer.send('pet:sleeping', false);
+    } catch (_) {}
+}
+
+// Start rest increment while sleeping (works even when window is minimized)
+function startRestIncrement() {
+    // Clear any existing interval
+    if (restIncrementIntervalId) {
+        clearInterval(restIncrementIntervalId);
+    }
+    
+    // Set up interval to increase rest every minute while sleeping
+    // Uses setInterval which continues even when window is minimized (like eating timeout)
+    restIncrementIntervalId = setInterval(() => {
+        if (isSleeping) {
+            const newRest = rest + REST_INCREMENT_AMOUNT;
+            setRest(newRest);
+        } else {
+            stopRestIncrement();
+        }
+    }, REST_INCREMENT_INTERVAL);
+}
+
+// Stop rest increment
+function stopRestIncrement() {
+    if (restIncrementIntervalId) {
+        clearInterval(restIncrementIntervalId);
+        restIncrementIntervalId = null;
+    }
+}
