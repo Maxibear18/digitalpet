@@ -59,11 +59,58 @@ const maxStopDuration = 4000; // Maximum 4 seconds stopped
 // Initialize everything
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing pet...');
-    initializePet();
-    // Start hunger decay system
-    startHungerDecay();
-    // Initialize rest stat
-    setRest(rest);
+    
+    // Load stored stats from main process first
+    let statsLoaded = false;
+    const statsToLoad = ['hunger', 'rest', 'health', 'happiness'];
+    let loadedStatsCount = 0;
+    
+    // Listen for stored stats from main process
+    ipcRenderer.on('stats:load', (_event, payload) => {
+        if (!payload || !payload.key) return;
+        
+        const key = payload.key;
+        const value = typeof payload.value === 'number' ? payload.value : (key === 'hunger' || key === 'rest' ? 50 : 50);
+        
+        // Update the corresponding variable
+        if (key === 'hunger') {
+            hunger = value;
+            console.log('Loaded stored hunger:', hunger);
+        } else if (key === 'rest') {
+            rest = value;
+            console.log('Loaded stored rest:', rest);
+        }
+        
+        loadedStatsCount++;
+        
+        // If we've loaded all expected stats (or waited a bit), proceed with initialization
+        if (loadedStatsCount >= statsToLoad.length) {
+            initializeAfterStatsLoad();
+        }
+    });
+    
+    // Function to initialize after stats are loaded
+    function initializeAfterStatsLoad() {
+        if (statsLoaded) return; // Prevent double initialization
+        statsLoaded = true;
+        
+        initializePet();
+        // Initialize rest stat (this will also send it to main.js)
+        setRest(rest);
+        // Initialize hunger stat (this will also send it to main.js)
+        setHunger(hunger);
+        // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
+        
+        console.log('Pet initialized with stats - Hunger:', hunger, 'Rest:', rest);
+    }
+    
+    // Fallback: if stats don't load within 500ms, initialize with defaults
+    setTimeout(() => {
+        if (!statsLoaded) {
+            console.log('Stats load timeout, initializing with defaults');
+            initializeAfterStatsLoad();
+        }
+    }, 500);
     
     // Menu placeholders
     ipcRenderer.on('menu:open', (_event, section) => {
@@ -90,6 +137,29 @@ window.addEventListener('load', () => {
     ipcRenderer.on('action:wake', () => {
         if (isSleeping) {
             stopSleeping();
+        }
+    });
+    
+    // Listen for stat updates from main process (e.g., hunger decay)
+    // This ensures the pet window stays in sync with main process stats
+    ipcRenderer.on('stats:update', (_event, payload) => {
+        if (!payload || !payload.key) return;
+        
+        const key = payload.key;
+        const value = typeof payload.value === 'number' ? payload.value : 0;
+        
+        // Update local variables when stats change from main process
+        if (key === 'hunger') {
+            const oldHunger = hunger;
+            hunger = value;
+            console.log('Hunger updated from main process:', hunger);
+            
+            // If hunger decreased and food is available, pet should try to eat
+            if (hunger < oldHunger && hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy && !isSleeping) {
+                moveToNearestFood();
+            }
+        } else if (key === 'rest') {
+            rest = value;
         }
     });
 });
@@ -567,24 +637,13 @@ function setRest(value) {
     }
 }
 
-// Start the hunger decay system - decreases hunger every 2.5 minutes
+// Note: Hunger decay is now handled in main.js for persistence
+// This function is kept for backward compatibility but does nothing
+// The main process handles hunger decay and sends updates via IPC
 function startHungerDecay() {
-    // Clear any existing interval
-    if (hungerDecayIntervalId) {
-        clearInterval(hungerDecayIntervalId);
-    }
-    
-    // Set up interval to decrease hunger every 2.5 minutes
-    hungerDecayIntervalId = setInterval(() => {
-        // Decrease hunger by 10 points
-        const newHunger = hunger - HUNGER_DECAY_AMOUNT;
-        setHunger(newHunger);
-        
-        // If hunger dropped below 0 and food is available, pet should try to eat
-        if (hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy) {
-            moveToNearestFood();
-        }
-    }, HUNGER_DECAY_INTERVAL);
+    // Hunger decay is now handled in main.js so it works even when windows are closed
+    // The main process sends 'stats:update' messages which are handled in the window load event
+    console.log('Hunger decay is handled by main process');
 }
 
 // Handle resize
