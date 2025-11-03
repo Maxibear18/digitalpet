@@ -5,6 +5,11 @@ const sprites = [
     'sprites/botamon.png',
     'sprites/botamon 2.png'
 ];
+// Sprite paths for happiness animation (cycles between 1 and 3)
+const happinessSprites = [
+    'sprites/botamon.png',
+    'sprites/botamon 3.png'
+];
 let currentSpriteIndex = 0;
 
 // Pet position
@@ -17,10 +22,11 @@ let pet = null;
 let animationRunning = false;
 let isWalking = true; // Walking state
 let isEating = false; // Eating state
-let currentFoodEl = null;
-let currentFoodX = 0;
-let currentFoodY = 0;
+let isHappy = false; // Happiness animation state
+let currentFoodEl = null; // Currently targeted food item
+let foodItems = []; // Array of all food items on screen
 let eatingTimeoutId = null;
+let happinessSpriteIndex = 0; // Current sprite in happiness animation
 
 // Hunger (0-100)
 let hunger = 50;
@@ -61,10 +67,12 @@ function spawnFoodAndGoToIt(imagePath) {
 
     const item = document.createElement('img');
     item.src = imagePath;
-    item.alt = 'Item';
+    item.alt = 'Food';
+    item.className = 'food-item'; // Add class to identify food items
     item.style.position = 'absolute';
     item.style.imageRendering = 'pixelated';
-    item.style.pointerEvents = 'none';
+    item.style.pointerEvents = 'auto'; // Make clickable
+    item.style.cursor = 'pointer'; // Show pointer cursor
     item.style.zIndex = '90';
     item.style.width = '48px';
     item.style.height = 'auto';
@@ -76,23 +84,110 @@ function spawnFoodAndGoToIt(imagePath) {
     item.style.left = spawnX + 'px';
     item.style.top = spawnY + 'px';
 
+    // Add click event to remove food
+    item.addEventListener('click', () => {
+        removeFoodItem(item);
+    });
+
     container.appendChild(item);
+    
+    // Add to food items array
+    foodItems.push(item);
 
-    // Track current food and move pet to it
-    currentFoodEl = item;
-    currentFoodX = spawnX;
-    currentFoodY = spawnY;
+    // Move pet to nearest food only if hunger is less than 100
+    if (hunger < HUNGER_MAX) {
+        moveToNearestFood();
+    }
+}
+
+// Remove a food item when clicked by user
+function removeFoodItem(foodItem) {
+    if (!foodItem || !foodItem.parentNode) return;
+    
+    // Remove from DOM
+    foodItem.parentNode.removeChild(foodItem);
+    
+    // Remove from food items array
+    foodItems = foodItems.filter(food => food !== foodItem);
+    
+    // If this was the current target, clear it and find nearest food if available
+    if (currentFoodEl === foodItem) {
+        currentFoodEl = null;
+        if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+            moveToNearestFood();
+        }
+    }
+}
+
+// Find all food items on screen and return the nearest one to the pet
+function findNearestFood() {
+    if (!pet || foodItems.length === 0) return null;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return null;
+    
+    let nearestFood = null;
+    let minDistance = Infinity;
+    
+    // Filter out any food items that have been removed from DOM
+    foodItems = foodItems.filter(food => {
+        if (!food.parentNode) return false; // Item was removed
+        return true;
+    });
+    
+    if (foodItems.length === 0) return null;
+    
+    // Find nearest food item
+    foodItems.forEach(food => {
+        const foodRect = food.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const foodX = parseFloat(food.style.left);
+        const foodY = parseFloat(food.style.top);
+        
+        // Calculate distance from pet to food
+        const dx = foodX - petX;
+        const dy = foodY - petY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestFood = food;
+        }
+    });
+    
+    return nearestFood;
+}
+
+// Move pet to the nearest food item
+function moveToNearestFood() {
+    if (!pet || hunger >= HUNGER_MAX) return;
+    
+    const nearestFood = findNearestFood();
+    if (!nearestFood) return;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    currentFoodEl = nearestFood;
+    
+    // Get food position
+    const foodX = parseFloat(nearestFood.style.left);
+    const foodY = parseFloat(nearestFood.style.top);
+    
     isEating = false;
-
-    // Force walking toward the food
+    
+    // Interrupt any current behavior and immediately walk toward the food
     isWalking = true;
+    isHappy = false; // Stop happiness animation if it's playing
+    
     // Aim pet so its center aligns over the food center (pet ~120px, food ~48px)
     const petWidth = 120;
     const petHeight = 120;
     const foodWidth = 48;
     const foodHeight = 48;
-    let desiredX = currentFoodX + (foodWidth / 2) - (petWidth / 2);
-    let desiredY = currentFoodY + (foodHeight / 2) - (petHeight / 2);
+    let desiredX = foodX + (foodWidth / 2) - (petWidth / 2);
+    let desiredY = foodY + (foodHeight / 2) - (petHeight / 2);
     // Nudge slightly toward the food so the pet overlaps it more
     desiredX -= 8;
     desiredY -= 6;
@@ -172,15 +267,31 @@ function chooseNewTarget() {
 
 function updateSprite() {
     if (!pet) return;
-    // Animate when walking or eating (chewing)
-    if (isWalking || isEating) {
+    // Happiness animation takes priority
+    if (isHappy) {
+        happinessSpriteIndex = (happinessSpriteIndex + 1) % happinessSprites.length;
+        pet.src = happinessSprites[happinessSpriteIndex];
+    } else if (isWalking || isEating) {
+        // Animate when walking or eating (chewing)
         currentSpriteIndex = (currentSpriteIndex + 1) % sprites.length;
         pet.src = sprites[currentSpriteIndex];
     }
 }
 
 function updatePosition() {
-    if (!pet || !isWalking) return; // Don't move when stopped
+    if (!pet) return;
+    // If food is present and not eating yet, force walking and move to nearest food
+    if (foodItems.length > 0 && !isEating && hunger < HUNGER_MAX) {
+        // Check if we have a valid current food target
+        if (!currentFoodEl || !currentFoodEl.parentNode) {
+            // Current food was removed or invalid, find nearest
+            moveToNearestFood();
+        }
+        if (currentFoodEl) {
+            isWalking = true;
+        }
+    }
+    if (!isWalking) return; // Don't move when stopped
     
     const container = document.querySelector('.pet-container');
     if (!container) return;
@@ -195,7 +306,7 @@ function updatePosition() {
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     // If close enough to target
-    if (distance < 1) {
+    if (distance < 5) { // Increased threshold to ensure pet reaches food
         // If target is food, start eating
         if (currentFoodEl) {
             beginEating();
@@ -243,8 +354,8 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
-    // Disable random state changes while eating
-    if (isEating) return;
+    // Disable random state changes while eating, during happiness animation, or when food is present
+    if (isEating || isHappy || (foodItems.length > 0 && hunger < HUNGER_MAX)) return;
     if (currentTime >= nextStateChangeTime) {
         isWalking = !isWalking;
         scheduleNextStateChange();
@@ -268,8 +379,8 @@ function animate(currentTime) {
     // Check if we should change walking state
     checkStateChange(currentTime);
     
-    // Update sprite (when walking or eating)
-    if (isWalking || isEating) {
+    // Update sprite (when walking, eating, or happy)
+    if (isWalking || isEating || isHappy) {
         if (!lastSpriteUpdate) {
             lastSpriteUpdate = currentTime;
         }
@@ -296,7 +407,24 @@ function startAnimation() {
 }
 
 function beginEating() {
-    if (!currentFoodEl || isEating) return;
+    // Verify food still exists and is in the food items array
+    if (!currentFoodEl || !currentFoodEl.parentNode || isEating) {
+        // Food was removed or invalid, find nearest food if available
+        if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+            moveToNearestFood();
+        }
+        return;
+    }
+    
+    // Verify this food is still in our food items array
+    if (!foodItems.includes(currentFoodEl)) {
+        // Food was removed from array but element still exists, find nearest
+        if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+            moveToNearestFood();
+        }
+        return;
+    }
+    
     // Arrived at food: stop moving and chew
     isWalking = false;
     isEating = true;
@@ -311,18 +439,63 @@ function beginEating() {
 }
 
 function finishEating() {
-    // Remove food element
+    // Remove the food element that was just eaten
     if (currentFoodEl && currentFoodEl.parentNode) {
         currentFoodEl.parentNode.removeChild(currentFoodEl);
     }
+    
+    // Remove from food items array
+    foodItems = foodItems.filter(food => food !== currentFoodEl);
+    
     currentFoodEl = null;
     isEating = false;
     // Increase hunger by 5 and clamp
     setHunger(hunger + 5);
-    // Resume walking
-    isWalking = true;
-    scheduleNextStateChange();
-    chooseNewTarget();
+    
+    // Check if there are more food items available
+    if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+        // More food available - move to nearest food after happiness animation
+        // Store this info to use after animation completes
+        const hasMoreFood = true;
+        playHappinessAnimation(hasMoreFood);
+    } else {
+        // No more food - play happiness animation and resume normal walking
+        playHappinessAnimation(false);
+    }
+}
+
+function playHappinessAnimation(hasMoreFood = false) {
+    if (!pet) return;
+    isHappy = true;
+    isWalking = false;
+    happinessSpriteIndex = 0; // Start with botamon.png (index 0)
+    pet.src = happinessSprites[happinessSpriteIndex];
+    
+    // Each cycle is 1->3->1 (2 sprite switches), so 3 cycles = 6 switches total
+    // The animation loop will handle the sprite updates automatically
+    const totalSwitches = 6; // 3 cycles * 2 switches per cycle
+    const totalDuration = totalSwitches * spriteUpdateInterval;
+    
+    setTimeout(() => {
+        // Animation complete - 3 cycles finished
+        isHappy = false;
+        
+        if (hasMoreFood && foodItems.length > 0 && hunger < HUNGER_MAX) {
+            // More food available - move to nearest food
+            moveToNearestFood();
+        } else {
+            // No more food - resume normal walking
+            isWalking = true;
+            scheduleNextStateChange();
+            chooseNewTarget();
+        }
+        
+        // Reset to first walking sprite
+        if (pet) {
+            currentSpriteIndex = 0;
+            pet.src = sprites[0];
+        }
+    }, totalDuration);
 }
 
 function setHunger(value) {
