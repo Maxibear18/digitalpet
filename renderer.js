@@ -16,6 +16,16 @@ const walkSpeed = 0.4; // Slower movement
 let pet = null;
 let animationRunning = false;
 let isWalking = true; // Walking state
+let isEating = false; // Eating state
+let currentFoodEl = null;
+let currentFoodX = 0;
+let currentFoodY = 0;
+let eatingTimeoutId = null;
+
+// Hunger (0-100)
+let hunger = 50;
+const HUNGER_MAX = 100;
+const HUNGER_MIN = 0;
 let lastSpriteUpdate = 0;
 let nextStateChangeTime = 0;
 const spriteUpdateInterval = 300; // milliseconds
@@ -40,11 +50,11 @@ window.addEventListener('load', () => {
     // Handle spawning items from the Shop
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;
-        spawnItemAtPet(payload.imagePath);
+        spawnFoodAndGoToIt(payload.imagePath);
     });
 });
 
-function spawnItemAtPet(imagePath) {
+function spawnFoodAndGoToIt(imagePath) {
     if (!pet) return;
     const container = document.querySelector('.pet-container');
     if (!container) return;
@@ -59,15 +69,35 @@ function spawnItemAtPet(imagePath) {
     item.style.width = '48px';
     item.style.height = 'auto';
 
-    // Center item on pet position
-    const offsetX = 24; // half of width
-    const offsetY = 24; // approximate half height
-    item.style.left = (petX + offsetX) + 'px';
-    item.style.top = (petY + offsetY) + 'px';
+    // Spawn at a random location within container
+    const rect = container.getBoundingClientRect();
+    const spawnX = Math.max(0, Math.min(rect.width - 48, Math.random() * (rect.width - 48)));
+    const spawnY = Math.max(0, Math.min(rect.height - 48, Math.random() * (rect.height - 48)));
+    item.style.left = spawnX + 'px';
+    item.style.top = spawnY + 'px';
 
     container.appendChild(item);
 
-    // Leave the item in place for now (no auto-removal)
+    // Track current food and move pet to it
+    currentFoodEl = item;
+    currentFoodX = spawnX;
+    currentFoodY = spawnY;
+    isEating = false;
+
+    // Force walking toward the food
+    isWalking = true;
+    // Aim pet so its center aligns over the food center (pet ~120px, food ~48px)
+    const petWidth = 120;
+    const petHeight = 120;
+    const foodWidth = 48;
+    const foodHeight = 48;
+    let desiredX = currentFoodX + (foodWidth / 2) - (petWidth / 2);
+    let desiredY = currentFoodY + (foodHeight / 2) - (petHeight / 2);
+    // Nudge slightly toward the food so the pet overlaps it more
+    desiredX -= 8;
+    desiredY -= 6;
+    targetX = Math.max(0, Math.min(desiredX, rect.width - petWidth));
+    targetY = Math.max(0, Math.min(desiredY, rect.height - petHeight));
 }
 
 function initializePet() {
@@ -142,8 +172,8 @@ function chooseNewTarget() {
 
 function updateSprite() {
     if (!pet) return;
-    // Only animate sprite when walking
-    if (isWalking) {
+    // Animate when walking or eating (chewing)
+    if (isWalking || isEating) {
         currentSpriteIndex = (currentSpriteIndex + 1) % sprites.length;
         pet.src = sprites[currentSpriteIndex];
     }
@@ -164,8 +194,14 @@ function updatePosition() {
     const dy = targetY - petY;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // If reached target, choose new one (only when walking)
-    if (distance < 2) {
+    // If close enough to target
+    if (distance < 1) {
+        // If target is food, start eating
+        if (currentFoodEl) {
+            beginEating();
+            return;
+        }
+        // Otherwise, choose a new random target
         chooseNewTarget();
         return;
     }
@@ -207,6 +243,8 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
+    // Disable random state changes while eating
+    if (isEating) return;
     if (currentTime >= nextStateChangeTime) {
         isWalking = !isWalking;
         scheduleNextStateChange();
@@ -230,8 +268,8 @@ function animate(currentTime) {
     // Check if we should change walking state
     checkStateChange(currentTime);
     
-    // Update sprite (only when walking)
-    if (isWalking) {
+    // Update sprite (when walking or eating)
+    if (isWalking || isEating) {
         if (!lastSpriteUpdate) {
             lastSpriteUpdate = currentTime;
         }
@@ -255,6 +293,44 @@ function startAnimation() {
     animationRunning = true;
     lastSpriteUpdate = 0;
     requestAnimationFrame(animate);
+}
+
+function beginEating() {
+    if (!currentFoodEl || isEating) return;
+    // Arrived at food: stop moving and chew
+    isWalking = false;
+    isEating = true;
+    // Ensure pet is visually facing/eating (start chewing animation via animate loop)
+    if (eatingTimeoutId) {
+        clearTimeout(eatingTimeoutId);
+        eatingTimeoutId = null;
+    }
+    eatingTimeoutId = setTimeout(() => {
+        finishEating();
+    }, 5000); // 5 seconds
+}
+
+function finishEating() {
+    // Remove food element
+    if (currentFoodEl && currentFoodEl.parentNode) {
+        currentFoodEl.parentNode.removeChild(currentFoodEl);
+    }
+    currentFoodEl = null;
+    isEating = false;
+    // Increase hunger by 5 and clamp
+    setHunger(hunger + 5);
+    // Resume walking
+    isWalking = true;
+    scheduleNextStateChange();
+    chooseNewTarget();
+}
+
+function setHunger(value) {
+    hunger = Math.max(HUNGER_MIN, Math.min(HUNGER_MAX, value));
+    // Notify main to forward update to stats window
+    try {
+        ipcRenderer.send('stats:update', { key: 'hunger', value: hunger, max: HUNGER_MAX });
+    } catch (_) {}
 }
 
 // Handle resize

@@ -132,3 +132,10 @@ ipcMain.on('shop:buy', (_event, payload) => {
   }
 });
 
+// Forward stat updates from pet to stats window
+ipcMain.on('stats:update', (_event, payload) => {
+  if (statsWindow && !statsWindow.isDestroyed()) {
+    statsWindow.webContents.send('stats:update', payload);
+  }
+});
+
