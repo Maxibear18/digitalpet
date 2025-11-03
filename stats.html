@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats</title>
+    <link rel="stylesheet" href="stats.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <script defer src="stats.js"></script>
+    <style>body{font-family:'Nunito',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}</style>
+</head>
+<body>
+    <div class="stats-window">
+        <header class="stats-header">
+            <div class="pet-meta">
+                <img class="pet-avatar" src="sprites/botamon.png" alt="Botamon">
+                <div class="pet-text">
+                    <div class="pet-name">Botamon</div>
+                    <div class="pet-sub">Level 1 • Baby</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="stats-content">
+            <div class="stats-grid">
+                <div class="stat-card" data-key="health">
+                    <div class="stat-title"><span class="icon">❤</span> Health</div>
+                    <div class="bar"><div class="fill" style="width:50%"></div></div>
+                    <div class="value">50 / 100</div>
+                </div>
+                <div class="stat-card" data-key="rest">
+                    <div class="stat-title"><span class="icon">💤</span> Rest</div>
+                    <div class="bar"><div class="fill" style="width:50%"></div></div>
+                    <div class="value">50 / 100</div>
+                </div>
+                <div class="stat-card" data-key="hunger">
+                    <div class="stat-title"><span class="icon">🍖</span> Hunger</div>
+                    <div class="bar"><div class="fill" style="width:50%"></div></div>
+                    <div class="value">50 / 100</div>
+                </div>
+                <div class="stat-card" data-key="happiness">
+                    <div class="stat-title"><span class="icon">😊</span> Happiness</div>
+                    <div class="bar"><div class="fill" style="width:50%"></div></div>
+                    <div class="value">50 / 100</div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
+

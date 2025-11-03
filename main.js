@@ -3,6 +3,7 @@ const path = require('path');
 
 let petWindow;
 let shopWindow;
+let statsWindow;
 
 function createPetWindow() {
   // Create the browser window
@@ -42,16 +43,9 @@ function createPetWindow() {
     },
     {
       label: 'Stats',
-      submenu: [
-        {
-          label: 'Open Stats',
-          click: () => {
-            if (petWindow) {
-              petWindow.webContents.send('menu:open', 'stats');
-            }
-          }
-        }
-      ]
+      click: () => {
+        openStatsWindow();
+      }
     }
   ];
   const menu = Menu.buildFromTemplate(template);
@@ -84,6 +78,34 @@ function openShopWindow() {
   shopWindow.loadFile('shop.html');
   shopWindow.on('closed', () => {
     shopWindow = null;
+  });
+}
+
+function openStatsWindow() {
+  if (statsWindow && !statsWindow.isDestroyed()) {
+    statsWindow.focus();
+    return;
+  }
+  statsWindow = new BrowserWindow({
+    width: 260,
+    height: 360,
+    resizable: true,
+    title: 'Stats',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  if (statsWindow && !statsWindow.isDestroyed()) {
+    statsWindow.setMenu(null);
+    statsWindow.setMenuBarVisibility(false);
+  }
+  statsWindow.loadFile('stats.html');
+  statsWindow.on('closed', () => {
+    statsWindow = null;
   });
 }
 
