@@ -2,6 +2,7 @@ const { app, BrowserWindow, Menu } = require('electron');
 const path = require('path');
 
 let petWindow;
+let shopWindow;
 
 function createPetWindow() {
   // Create the browser window
@@ -35,16 +36,9 @@ function createPetWindow() {
   const template = [
     {
       label: 'Shop',
-      submenu: [
-        {
-          label: 'Open Shop',
-          click: () => {
-            if (petWindow) {
-              petWindow.webContents.send('menu:open', 'shop');
-            }
-          }
-        }
-      ]
+      click: () => {
+        openShopWindow();
+      }
     },
     {
       label: 'Stats',
@@ -62,6 +56,35 @@ function createPetWindow() {
   ];
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+function openShopWindow() {
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.focus();
+    return;
+  }
+  shopWindow = new BrowserWindow({
+    width: 560,
+    height: 420,
+    resizable: true,
+    title: 'Shop',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  // Remove app menu from the Shop window entirely
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.setMenu(null);
+    shopWindow.setMenuBarVisibility(false);
+  }
+  shopWindow.loadFile('shop.html');
+  shopWindow.on('closed', () => {
+    shopWindow = null;
+  });
 }
 
 // This method will be called when Electron has finished initialization
