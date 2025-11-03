@@ -56,3 +56,48 @@ html, body {
     opacity: 1;
 }
 
+/* Sleeping Z's animation */
+.sleep-z {
+    position: absolute;
+    font-size: 24px;
+    font-weight: bold;
+    color: rgba(100, 150, 200, 0.8);
+    z-index: 150;
+    pointer-events: none;
+    user-select: none;
+    font-family: Arial, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    animation: floatUp 2s ease-in-out infinite;
+    opacity: 0;
+}
+
+.sleep-z.show {
+    opacity: 1;
+}
+
+.sleep-z:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.sleep-z:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.sleep-z:nth-child(3) {
+    animation-delay: 0.8s;
+}
+
+@keyframes floatUp {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.8);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-30px) translateX(5px) scale(1);
+        opacity: 0;
+    }
+}
+

@@ -31,6 +31,7 @@ let currentFoodEl = null; // Currently targeted food item
 let foodItems = []; // Array of all food items on screen
 let eatingTimeoutId = null;
 let happinessSpriteIndex = 0; // Current sprite in happiness animation
+let sleepZs = []; // Array of sleeping Z elements
 
 // Hunger (0-100)
 let hunger = 50;
@@ -434,6 +435,11 @@ function animate() {
     
     // Update position (only when walking)
     updatePosition();
+    
+    // Update Z positions if sleeping
+    if (isSleeping) {
+        updateSleepZPositions();
+    }
 }
 
 function startAnimation() {
@@ -601,10 +607,76 @@ window.addEventListener('resize', () => {
     pet.style.left = petX + 'px';
     pet.style.top = petY + 'px';
     
+    // Update Z positions if sleeping
+    if (isSleeping) {
+        updateSleepZPositions();
+    }
+    
     if (targetX > maxX || targetY > maxY) {
         chooseNewTarget();
     }
 });
+
+// Create sleeping Z's
+function createSleepZs() {
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    // Remove any existing Z's first
+    removeSleepZs();
+    
+    // Create 3 Z's
+    for (let i = 0; i < 3; i++) {
+        const z = document.createElement('div');
+        z.className = 'sleep-z';
+        z.textContent = 'Z';
+        container.appendChild(z);
+        sleepZs.push(z);
+    }
+    
+    // Update their positions
+    updateSleepZPositions();
+    
+    // Show them after a brief delay for smooth appearance
+    setTimeout(() => {
+        sleepZs.forEach(z => z.classList.add('show'));
+    }, 50);
+}
+
+// Update Z positions to be above pet's head
+function updateSleepZPositions() {
+    if (!pet || sleepZs.length === 0) return;
+    
+    const petRect = pet.getBoundingClientRect();
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Position Z's above the pet's head
+    // Pet is 120px wide, so center Z's around the top-center of the pet
+    const petWidth = 120;
+    const zBaseX = petX + (petWidth / 2); // Center of pet
+    const zBaseY = petY; // Top of pet
+    
+    sleepZs.forEach((z, index) => {
+        // Offset each Z slightly horizontally and vertically
+        const offsetX = (index - 1) * 15; // -15, 0, 15 for spacing
+        const offsetY = 5 + (index * 8); // Position them starting at top of pet, stacked slightly
+        
+        z.style.left = (zBaseX + offsetX) + 'px';
+        z.style.top = (zBaseY + offsetY) + 'px';
+    });
+}
+
+// Remove sleeping Z's
+function removeSleepZs() {
+    sleepZs.forEach(z => {
+        if (z.parentNode) {
+            z.parentNode.removeChild(z);
+        }
+    });
+    sleepZs = [];
+}
 
 // Start sleeping
 function startSleeping() {
@@ -617,6 +689,9 @@ function startSleeping() {
     
     // Change sprite to sleep sprite
     pet.src = sleepSprite;
+    
+    // Create sleeping Z's
+    createSleepZs();
     
     // Start rest increment
     startRestIncrement();
@@ -632,6 +707,9 @@ function stopSleeping() {
     if (!pet || !isSleeping) return;
     
     isSleeping = false;
+    
+    // Remove sleeping Z's
+    removeSleepZs();
     
     // Stop rest increment
     stopRestIncrement();
