@@ -32,6 +32,9 @@ let happinessSpriteIndex = 0; // Current sprite in happiness animation
 let hunger = 50;
 const HUNGER_MAX = 100;
 const HUNGER_MIN = 0;
+const HUNGER_DECAY_INTERVAL = 150000; // 2.5 minutes in milliseconds
+const HUNGER_DECAY_AMOUNT = 10; // Amount hunger decreases by
+let hungerDecayIntervalId = null;
 let lastSpriteUpdate = 0;
 let nextStateChangeTime = 0;
 const spriteUpdateInterval = 300; // milliseconds
@@ -44,6 +47,9 @@ const maxStopDuration = 4000; // Maximum 4 seconds stopped
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing pet...');
     initializePet();
+    // Start hunger decay system
+    startHungerDecay();
+    
     // Menu placeholders
     ipcRenderer.on('menu:open', (_event, section) => {
         if (section === 'shop') {
@@ -504,6 +510,26 @@ function setHunger(value) {
     try {
         ipcRenderer.send('stats:update', { key: 'hunger', value: hunger, max: HUNGER_MAX });
     } catch (_) {}
+}
+
+// Start the hunger decay system - decreases hunger every 2.5 minutes
+function startHungerDecay() {
+    // Clear any existing interval
+    if (hungerDecayIntervalId) {
+        clearInterval(hungerDecayIntervalId);
+    }
+    
+    // Set up interval to decrease hunger every 2.5 minutes
+    hungerDecayIntervalId = setInterval(() => {
+        // Decrease hunger by 10 points
+        const newHunger = hunger - HUNGER_DECAY_AMOUNT;
+        setHunger(newHunger);
+        
+        // If hunger dropped below 0 and food is available, pet should try to eat
+        if (hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy) {
+            moveToNearestFood();
+        }
+    }, HUNGER_DECAY_INTERVAL);
 }
 
 // Handle resize
