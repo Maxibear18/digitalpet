@@ -33,6 +33,13 @@ let eatingTimeoutId = null;
 let happinessSpriteIndex = 0; // Current sprite in happiness animation
 let sleepZs = []; // Array of sleeping Z elements
 
+// Petting mechanic
+let petClickCount = 0; // Track number of clicks for petting
+const PETS_FOR_HAPPINESS = 10; // Number of pets needed to increase happiness
+let happiness = 50; // Happiness stat (0-100)
+const HAPPINESS_MAX = 100;
+const HAPPINESS_MIN = 0;
+
 // Hunger (0-100)
 let hunger = 50;
 const HUNGER_MAX = 100;
@@ -90,7 +97,7 @@ window.addEventListener('load', () => {
         if (!payload || !payload.key) return;
         
         const key = payload.key;
-        const value = typeof payload.value === 'number' ? payload.value : (key === 'hunger' || key === 'rest' ? 50 : 50);
+        const value = typeof payload.value === 'number' ? payload.value : (key === 'hunger' || key === 'rest' || key === 'happiness' ? 50 : 50);
         const max = typeof payload.max === 'number' ? payload.max : 100;
         
         // Update the stat bar in the pet window
@@ -103,6 +110,9 @@ window.addEventListener('load', () => {
         } else if (key === 'rest') {
             rest = value;
             console.log('Loaded stored rest:', rest);
+        } else if (key === 'happiness') {
+            happiness = value;
+            console.log('Loaded stored happiness:', happiness);
         }
         
         loadedStatsCount++;
@@ -123,9 +133,11 @@ window.addEventListener('load', () => {
         setRest(rest);
         // Initialize hunger stat (this will also send it to main.js)
         setHunger(hunger);
+        // Initialize happiness stat (this will also send it to main.js)
+        setHappiness(happiness);
         // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
         
-        console.log('Pet initialized with stats - Hunger:', hunger, 'Rest:', rest);
+        console.log('Pet initialized with stats - Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness);
     }
     
     // Fallback: if stats don't load within 500ms, initialize with defaults
@@ -188,6 +200,8 @@ window.addEventListener('load', () => {
             }
         } else if (key === 'rest') {
             rest = value;
+        } else if (key === 'happiness') {
+            happiness = value;
         }
     });
 });
@@ -346,6 +360,41 @@ function initializePet() {
     pet.style.left = '50px';
     pet.style.top = '50px';
     pet.style.zIndex = '100';
+    
+    // Add click handler for petting
+    let mouseDownX = 0;
+    let mouseDownY = 0;
+    let hasMoved = false;
+    
+    pet.addEventListener('mousedown', (e) => {
+        mouseDownX = e.clientX;
+        mouseDownY = e.clientY;
+        hasMoved = false;
+    });
+    
+    // Track mouse movement to detect dragging
+    document.addEventListener('mousemove', (e) => {
+        if (mouseDownX !== 0 || mouseDownY !== 0) {
+            const moveDistance = Math.sqrt(
+                Math.pow(e.clientX - mouseDownX, 2) + 
+                Math.pow(e.clientY - mouseDownY, 2)
+            );
+            if (moveDistance > 5) {
+                hasMoved = true;
+            }
+        }
+    });
+    
+    pet.addEventListener('mouseup', (e) => {
+        // Only trigger petting if it wasn't a drag (small movement)
+        if (!hasMoved && !isSleeping) {
+            handlePetClick();
+        }
+        // Reset tracking
+        mouseDownX = 0;
+        mouseDownY = 0;
+        hasMoved = false;
+    });
     
     // Get container dimensions
     const container = document.querySelector('.pet-container');
@@ -666,6 +715,37 @@ function setRest(value) {
     // Auto-wake when rest reaches 100
     if (rest >= REST_MAX && isSleeping) {
         stopSleeping();
+    }
+}
+
+function setHappiness(value) {
+    happiness = Math.max(HAPPINESS_MIN, Math.min(HAPPINESS_MAX, value));
+    // Update stat bar directly
+    updateStatBar('happiness', happiness, HAPPINESS_MAX);
+    // Notify main to store the update
+    try {
+        ipcRenderer.send('stats:update', { key: 'happiness', value: happiness, max: HAPPINESS_MAX });
+    } catch (_) {}
+}
+
+// Handle pet click for petting
+function handlePetClick() {
+    if (isSleeping) return; // Can't pet while sleeping
+    
+    // Increment click count
+    petClickCount++;
+    
+    // Play happiness animation (if not already playing and not eating)
+    if (!isHappy && !isEating) {
+        playHappinessAnimation(false);
+    }
+    
+    // Check if we've reached 5 clicks
+    if (petClickCount >= PETS_FOR_HAPPINESS) {
+        // Increase happiness by 1
+        setHappiness(happiness + 1);
+        // Reset click counter
+        petClickCount = 0;
     }
 }
 
