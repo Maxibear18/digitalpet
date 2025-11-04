@@ -21,6 +21,27 @@ const HUNGER_MAX = 100;
 const HUNGER_MIN = 0;
 let hungerDecayIntervalId = null;
 
+// Happiness decay system - runs in main process so it persists even when windows are closed
+const HAPPINESS_DECAY_INTERVAL = 60000; // 1 minute in milliseconds
+const HAPPINESS_DECAY_AMOUNT = 10; // Amount happiness decreases by
+const HAPPINESS_MAX = 100;
+const HAPPINESS_MIN = 0;
+let happinessDecayIntervalId = null;
+
+// Rest decay system - runs in main process so it persists even when windows are closed
+// Only decays when pet is NOT sleeping
+const REST_DECAY_INTERVAL = 90000; // 1.5 minutes in milliseconds
+const REST_DECAY_AMOUNT = 5; // Amount rest decreases by
+const REST_MAX = 100;
+const REST_MIN = 0;
+let restDecayIntervalId = null;
+
+// Rest increment system - runs in main process so it persists even when windows are closed
+// Only increments when pet IS sleeping
+const REST_INCREMENT_INTERVAL = 45000; // 45 seconds in milliseconds
+const REST_INCREMENT_AMOUNT = 5; // Amount rest increases by while sleeping
+let restIncrementIntervalId = null;
+
 function createPetWindow() {
   // Create the browser window
   petWindow = new BrowserWindow({
@@ -66,8 +87,11 @@ function createPetWindow() {
   // Build custom menu with Actions, Shop, and Stats
   buildMenu();
   
-  // Start hunger decay system in main process
+  // Start decay systems in main process
   startHungerDecay();
+  startHappinessDecay();
+  startRestDecay();
+  // Rest increment is started/stopped when pet sleeps/wakes
 }
 
 // Build menu with dynamic Sleep/Wake Up button
@@ -231,6 +255,16 @@ ipcMain.on('stats:update', (_event, payload) => {
 ipcMain.on('pet:sleeping', (_event, sleeping) => {
   isPetSleeping = sleeping;
   buildMenu(); // Rebuild menu with updated Sleep/Wake Up button
+  
+  if (sleeping) {
+    // Pet is sleeping - stop decay and start increment
+    stopRestDecay();
+    startRestIncrement();
+  } else {
+    // Pet is awake - stop increment and start decay
+    stopRestIncrement();
+    startRestDecay();
+  }
 });
 
 // Handle request for stored stats (so pet window can load them on startup)
@@ -247,6 +281,7 @@ ipcMain.on('stats:request', (event) => {
 });
 
 // Start hunger decay system - runs continuously in main process
+// Hunger decays regardless of sleep state (continues even when pet is sleeping)
 function startHungerDecay() {
   // Clear any existing interval
   if (hungerDecayIntervalId) {
@@ -254,19 +289,20 @@ function startHungerDecay() {
   }
   
   // Set up interval to decrease hunger every 2.5 minutes
+  // Note: This runs regardless of sleep state - hunger always decreases
   hungerDecayIntervalId = setInterval(() => {
     if (!storedStats.hunger) {
       storedStats.hunger = { value: 50, max: HUNGER_MAX };
     }
     
-    // Decrease hunger by the decay amount
+    // Decrease hunger by the decay amount (works even when sleeping)
     const currentHunger = storedStats.hunger.value;
     const newHunger = Math.max(HUNGER_MIN, currentHunger - HUNGER_DECAY_AMOUNT);
     
     // Update stored stat
     storedStats.hunger.value = newHunger;
     
-    // Send update to pet window if it's open
+    // Send update to pet window if it's open (even when sleeping)
     if (petWindow && !petWindow.isDestroyed()) {
       petWindow.webContents.send('stats:update', {
         key: 'hunger',
@@ -284,5 +320,178 @@ function startHungerDecay() {
       });
     }
   }, HUNGER_DECAY_INTERVAL);
+}
+
+// Start happiness decay system - runs continuously in main process
+// Only decays when pet is NOT sleeping
+function startHappinessDecay() {
+  // Clear any existing interval
+  if (happinessDecayIntervalId) {
+    clearInterval(happinessDecayIntervalId);
+  }
+  
+  // Set up interval to decrease happiness every minute (only when awake)
+  happinessDecayIntervalId = setInterval(() => {
+    // Don't decay happiness if pet is sleeping
+    if (isPetSleeping) {
+      return;
+    }
+    
+    if (!storedStats.happiness) {
+      storedStats.happiness = { value: 50, max: HAPPINESS_MAX };
+    }
+    
+    // Decrease happiness by the decay amount
+    const currentHappiness = storedStats.happiness.value;
+    const newHappiness = Math.max(HAPPINESS_MIN, currentHappiness - HAPPINESS_DECAY_AMOUNT);
+    
+    // Update stored stat
+    storedStats.happiness.value = newHappiness;
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'happiness',
+        value: newHappiness,
+        max: HAPPINESS_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'happiness',
+        value: newHappiness,
+        max: HAPPINESS_MAX
+      });
+    }
+  }, HAPPINESS_DECAY_INTERVAL);
+}
+
+// Start rest decay system - runs continuously in main process
+// Only decays when pet is NOT sleeping
+function startRestDecay() {
+  // Clear any existing interval
+  if (restDecayIntervalId) {
+    clearInterval(restDecayIntervalId);
+  }
+  
+  // Don't start decay if pet is sleeping
+  if (isPetSleeping) {
+    return;
+  }
+  
+  // Set up interval to decrease rest every 1.5 minutes (only when awake)
+  restDecayIntervalId = setInterval(() => {
+    // Don't decay if pet is sleeping
+    if (isPetSleeping) {
+      return;
+    }
+    
+    if (!storedStats.rest) {
+      storedStats.rest = { value: 50, max: REST_MAX };
+    }
+    
+    // Decrease rest by the decay amount
+    const currentRest = storedStats.rest.value;
+    const newRest = Math.max(REST_MIN, currentRest - REST_DECAY_AMOUNT);
+    
+    // Update stored stat
+    storedStats.rest.value = newRest;
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+  }, REST_DECAY_INTERVAL);
+}
+
+// Stop rest decay system
+function stopRestDecay() {
+  if (restDecayIntervalId) {
+    clearInterval(restDecayIntervalId);
+    restDecayIntervalId = null;
+  }
+}
+
+// Start rest increment system - runs continuously in main process
+// Only increments when pet IS sleeping
+function startRestIncrement() {
+  // Clear any existing interval
+  if (restIncrementIntervalId) {
+    clearInterval(restIncrementIntervalId);
+  }
+  
+  // Don't start increment if pet is not sleeping
+  if (!isPetSleeping) {
+    return;
+  }
+  
+  // Set up interval to increase rest every 45 seconds (only when sleeping)
+  restIncrementIntervalId = setInterval(() => {
+    // Don't increment if pet is not sleeping
+    if (!isPetSleeping) {
+      stopRestIncrement();
+      return;
+    }
+    
+    if (!storedStats.rest) {
+      storedStats.rest = { value: 50, max: REST_MAX };
+    }
+    
+    // Increase rest by the increment amount (cap at max)
+    const currentRest = storedStats.rest.value;
+    const newRest = Math.min(REST_MAX, currentRest + REST_INCREMENT_AMOUNT);
+    
+    // Update stored stat
+    storedStats.rest.value = newRest;
+    
+    // Auto-wake when rest reaches 100
+    if (newRest >= REST_MAX && isPetSleeping) {
+      // Notify renderer to wake up
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('action:wake');
+      }
+    }
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+  }, REST_INCREMENT_INTERVAL);
+}
+
+// Stop rest increment system
+function stopRestIncrement() {
+  if (restIncrementIntervalId) {
+    clearInterval(restIncrementIntervalId);
+    restIncrementIntervalId = null;
+  }
 }
 

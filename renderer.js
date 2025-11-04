@@ -52,9 +52,7 @@ let hungerDecayIntervalId = null;
 let rest = 50;
 const REST_MAX = 100;
 const REST_MIN = 0;
-const REST_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
-const REST_INCREMENT_AMOUNT = 5; // Amount rest increases by while sleeping
-let restIncrementIntervalId = null;
+// Rest increment/decay is now handled in main.js for persistence
 let lastSpriteUpdate = 0;
 let nextStateChangeTime = 0;
 const spriteUpdateInterval = 300; // milliseconds
@@ -712,10 +710,7 @@ function setRest(value) {
         ipcRenderer.send('stats:update', { key: 'rest', value: rest, max: REST_MAX });
     } catch (_) {}
     
-    // Auto-wake when rest reaches 100
-    if (rest >= REST_MAX && isSleeping) {
-        stopSleeping();
-    }
+    // Auto-wake is now handled in main.js when rest reaches 100
 }
 
 function setHappiness(value) {
@@ -864,9 +859,7 @@ function startSleeping() {
     // Create sleeping Z's
     createSleepZs();
     
-    // Start rest increment
-    startRestIncrement();
-    
+    // Rest increment is now handled in main.js for persistence
     // Notify main process that pet is sleeping (to update menu)
     try {
         ipcRenderer.send('pet:sleeping', true);
@@ -882,9 +875,7 @@ function stopSleeping() {
     // Remove sleeping Z's
     removeSleepZs();
     
-    // Stop rest increment
-    stopRestIncrement();
-    
+    // Rest increment is now handled in main.js for persistence
     // Reset to normal sprite
     currentSpriteIndex = 0;
     pet.src = sprites[0];
@@ -900,29 +891,5 @@ function stopSleeping() {
     } catch (_) {}
 }
 
-// Start rest increment while sleeping (works even when window is minimized)
-function startRestIncrement() {
-    // Clear any existing interval
-    if (restIncrementIntervalId) {
-        clearInterval(restIncrementIntervalId);
-    }
-    
-    // Set up interval to increase rest every minute while sleeping
-    // Uses setInterval which continues even when window is minimized (like eating timeout)
-    restIncrementIntervalId = setInterval(() => {
-        if (isSleeping) {
-            const newRest = rest + REST_INCREMENT_AMOUNT;
-            setRest(newRest);
-        } else {
-            stopRestIncrement();
-        }
-    }, REST_INCREMENT_INTERVAL);
-}
-
-// Stop rest increment
-function stopRestIncrement() {
-    if (restIncrementIntervalId) {
-        clearInterval(restIncrementIntervalId);
-        restIncrementIntervalId = null;
-    }
-}
+// Rest increment is now handled in main.js for persistence
+// This ensures rest increases even when the window is minimized or unfocused
