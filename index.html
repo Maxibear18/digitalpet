@@ -2,13 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">      
     <title>Digital Pet</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="pet-container">
-        <img id="pet" src="sprites/botamon.png" alt="Botamon" draggable="true">
+    <div class="pet-window">
+        <div class="stats-bar">
+            <div class="stat-item" data-key="health">
+                <div class="stat-icon">❤️</div>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width:50%"></div>
+                    <div class="stat-value">50 / 100</div>
+                </div>
+            </div>
+            <div class="stat-item" data-key="rest">
+                <div class="stat-icon">💤</div>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width:50%"></div>
+                    <div class="stat-value">50 / 100</div>
+                </div>
+            </div>
+            <div class="stat-item" data-key="hunger">
+                <div class="stat-icon">🍖</div>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width:50%"></div>
+                    <div class="stat-value">50 / 100</div>
+                </div>
+            </div>
+            <div class="stat-item" data-key="happiness">
+                <div class="stat-icon">😊</div>
+                <div class="stat-bar-container">
+                    <div class="stat-bar-fill" style="width:50%"></div>
+                    <div class="stat-value">50 / 100</div>
+                </div>
+            </div>
+        </div>
+        <div class="pet-container">
+            <img id="pet" src="sprites/botamon.png" alt="Botamon" draggable="true"> 
+        </div>
     </div>
     <script src="renderer.js"></script>
 </body>

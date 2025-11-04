@@ -56,6 +56,26 @@ const maxWalkDuration = 6000; // Maximum 6 seconds walking
 const minStopDuration = 1000; // Minimum 1 second stopped
 const maxStopDuration = 4000; // Maximum 4 seconds stopped
 
+// Function to update stat bars in the pet window
+function updateStatBar(key, value, max) {
+    const statItem = document.querySelector(`.stat-item[data-key="${key}"]`);
+    if (!statItem) return;
+    
+    const fill = statItem.querySelector('.stat-bar-fill');
+    const valueDisplay = statItem.querySelector('.stat-value');
+    
+    if (!fill || !valueDisplay) return;
+    
+    // Calculate percentage
+    const percent = Math.max(0, Math.min(100, Math.round((value / max) * 100)));
+    
+    // Update fill width
+    fill.style.width = percent + '%';
+    
+    // Update value text
+    valueDisplay.textContent = `${value} / ${max}`;
+}
+
 // Initialize everything
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing pet...');
@@ -71,6 +91,10 @@ window.addEventListener('load', () => {
         
         const key = payload.key;
         const value = typeof payload.value === 'number' ? payload.value : (key === 'hunger' || key === 'rest' ? 50 : 50);
+        const max = typeof payload.max === 'number' ? payload.max : 100;
+        
+        // Update the stat bar in the pet window
+        updateStatBar(key, value, max);
         
         // Update the corresponding variable
         if (key === 'hunger') {
@@ -147,6 +171,10 @@ window.addEventListener('load', () => {
         
         const key = payload.key;
         const value = typeof payload.value === 'number' ? payload.value : 0;
+        const max = typeof payload.max === 'number' ? payload.max : 100;
+        
+        // Update the stat bar in the pet window
+        updateStatBar(key, value, max);
         
         // Update local variables when stats change from main process
         if (key === 'hunger') {
@@ -618,7 +646,9 @@ function playHappinessAnimation(hasMoreFood = false) {
 
 function setHunger(value) {
     hunger = Math.max(HUNGER_MIN, Math.min(HUNGER_MAX, value));
-    // Notify main to forward update to stats window
+    // Update stat bar directly
+    updateStatBar('hunger', hunger, HUNGER_MAX);
+    // Notify main to store the update
     try {
         ipcRenderer.send('stats:update', { key: 'hunger', value: hunger, max: HUNGER_MAX });
     } catch (_) {}
@@ -626,7 +656,9 @@ function setHunger(value) {
 
 function setRest(value) {
     rest = Math.max(REST_MIN, Math.min(REST_MAX, value));
-    // Notify main to forward update to stats window
+    // Update stat bar directly
+    updateStatBar('rest', rest, REST_MAX);
+    // Notify main to store the update
     try {
         ipcRenderer.send('stats:update', { key: 'rest', value: rest, max: REST_MAX });
     } catch (_) {}
