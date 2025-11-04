@@ -99,12 +99,6 @@ function buildMenu() {
       click: () => {
         openShopWindow();
       }
-    },
-    {
-      label: 'Stats',
-      click: () => {
-        openStatsWindow();
-      }
     }
   ];
   const menu = Menu.buildFromTemplate(template);
