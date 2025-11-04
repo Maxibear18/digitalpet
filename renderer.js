@@ -32,6 +32,9 @@ let foodItems = []; // Array of all food items on screen
 let eatingTimeoutId = null;
 let happinessSpriteIndex = 0; // Current sprite in happiness animation
 let sleepZs = []; // Array of sleeping Z elements
+let wasteItems = []; // Array of all waste items on screen
+let wasteCount = 0; // Track total waste count for sickness mechanic
+let wasteSpawnIntervalId = null; // Interval ID for waste spawning
 
 // Petting mechanic
 let petClickCount = 0; // Track number of clicks for petting
@@ -134,6 +137,9 @@ window.addEventListener('load', () => {
         // Initialize happiness stat (this will also send it to main.js)
         setHappiness(happiness);
         // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
+        
+        // Start waste spawning system
+        startWasteSpawning();
         
         console.log('Pet initialized with stats - Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness);
     }
@@ -893,3 +899,99 @@ function stopSleeping() {
 
 // Rest increment is now handled in main.js for persistence
 // This ensures rest increases even when the window is minimized or unfocused
+
+// Waste spawning system
+const WASTE_SPAWN_INTERVAL = 180000; // 3 minutes in milliseconds
+const wasteSpritePath = 'sprites/waste.png';
+
+// Start waste spawning system - pet leaves waste every 3 minutes
+function startWasteSpawning() {
+    // Clear any existing interval
+    if (wasteSpawnIntervalId) {
+        clearInterval(wasteSpawnIntervalId);
+    }
+    
+    // Spawn waste every 3 minutes
+    wasteSpawnIntervalId = setInterval(() => {
+        spawnWaste();
+    }, WASTE_SPAWN_INTERVAL);
+}
+
+// Spawn waste at pet's current position
+function spawnWaste() {
+    if (!pet) return;
+    
+    // Don't spawn waste if pet is sleeping
+    if (isSleeping) {
+        return;
+    }
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    // Create waste element
+    const waste = document.createElement('img');
+    waste.src = wasteSpritePath;
+    waste.alt = 'Waste';
+    waste.className = 'waste-item';
+    waste.style.position = 'absolute';
+    waste.style.imageRendering = 'pixelated';
+    waste.style.pointerEvents = 'auto';
+    waste.style.cursor = 'pointer';
+    waste.style.zIndex = '85'; // Below pet (100) and food (90)
+    waste.style.width = '48px';
+    waste.style.height = 'auto';
+    
+    // Spawn at pet's current position (center of pet)
+    const petWidth = 120;
+    const petHeight = 120;
+    const wasteWidth = 48;
+    const wasteHeight = 48;
+    
+    // Center waste on pet's position
+    const wasteX = petX + (petWidth / 2) - (wasteWidth / 2);
+    const wasteY = petY + (petHeight / 2) - (wasteHeight / 2);
+    
+    // Keep within container bounds
+    const rect = container.getBoundingClientRect();
+    const finalX = Math.max(0, Math.min(wasteX, rect.width - wasteWidth));
+    const finalY = Math.max(0, Math.min(wasteY, rect.height - wasteHeight));
+    
+    waste.style.left = finalX + 'px';
+    waste.style.top = finalY + 'px';
+    
+    // Add click event to remove waste (cleaning)
+    waste.addEventListener('click', () => {
+        removeWasteItem(waste);
+    });
+    
+    container.appendChild(waste);
+    
+    // Add to waste items array
+    wasteItems.push(waste);
+    wasteCount++;
+    
+    // TODO: Implement sickness mechanic based on waste count
+    // The more waste on screen, the higher the chance the pet gets sick
+    // Example logic:
+    // - Calculate sickness chance based on wasteCount (e.g., wasteCount * 2% chance per minute)
+    // - When pet gets sick, decrease health or apply status effect
+    // - Consider adding visual indicators for sickness
+    // - Maybe add medicine items to cure sickness
+    
+    console.log('Waste spawned. Total waste count:', wasteCount);
+}
+
+// Remove a waste item when clicked (player cleans it)
+function removeWasteItem(wasteItem) {
+    if (!wasteItem || !wasteItem.parentNode) return;
+    
+    // Remove from DOM
+    wasteItem.parentNode.removeChild(wasteItem);
+    
+    // Remove from waste items array
+    wasteItems = wasteItems.filter(waste => waste !== wasteItem);
+    wasteCount = Math.max(0, wasteCount - 1);
+    
+    console.log('Waste cleaned. Remaining waste count:', wasteCount);
+}
