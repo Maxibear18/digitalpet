@@ -235,7 +235,8 @@ function spawnFoodAndGoToIt(imagePath) {
     item.style.top = spawnY + 'px';
 
     // Add click event to remove food
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to pet
         removeFoodItem(item);
     });
 
@@ -345,6 +346,113 @@ function moveToNearestFood() {
     targetY = Math.max(0, Math.min(desiredY, rect.height - petHeight));
 }
 
+// Cache for sprite image data for pixel-perfect hit detection
+let petImageData = null;
+let petImageLoaded = false;
+
+// Load image data for pixel-perfect hit detection
+function loadPetImageData() {
+    if (!pet) return;
+    
+    const currentSrc = pet.src;
+    if (!currentSrc) return;
+    
+    const img = new Image();
+    // Try with crossOrigin for remote images, but it might fail for local files
+    // If it fails, we'll catch it and retry without crossOrigin
+    img.onload = function() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            petImageData = ctx.getImageData(0, 0, img.width, img.height);
+            petImageLoaded = true;
+            console.log('Pet image data loaded for pixel-perfect hit detection');
+        } catch (e) {
+            console.warn('Could not load image data (possibly CORS issue):', e);
+            // Fall back to bounding box detection
+            petImageLoaded = false;
+        }
+    };
+    img.onerror = function() {
+        // If crossOrigin fails, try without it (for local files)
+        if (img.crossOrigin) {
+            const retryImg = new Image();
+            retryImg.onload = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = retryImg.width;
+                    canvas.height = retryImg.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(retryImg, 0, 0);
+                    petImageData = ctx.getImageData(0, 0, retryImg.width, retryImg.height);
+                    petImageLoaded = true;
+                    console.log('Pet image data loaded (without CORS)');
+                } catch (e) {
+                    console.warn('Could not load image data:', e);
+                    petImageLoaded = false;
+                }
+            };
+            retryImg.src = currentSrc;
+        }
+    };
+    
+    // Try with crossOrigin first (for remote images if needed)
+    img.crossOrigin = 'anonymous';
+    img.src = currentSrc;
+}
+
+// Function to reload image data when sprite changes
+function reloadPetImageData() {
+    petImageLoaded = false;
+    petImageData = null;
+    loadPetImageData();
+}
+
+// Check if a click hit an opaque pixel in the pet sprite
+function isClickOnPetPixel(clickX, clickY) {
+    if (!pet || !petImageLoaded || !petImageData) {
+        // Fallback: if image data not loaded yet, use bounding box
+        return true;
+    }
+    
+    const petRect = pet.getBoundingClientRect();
+    const container = document.querySelector('.pet-container');
+    if (!container) return false;
+    const containerRect = container.getBoundingClientRect();
+    
+    // Calculate click position relative to pet element
+    const relativeX = clickX - petRect.left;
+    const relativeY = clickY - petRect.top;
+    
+    // Check if click is within pet bounds
+    if (relativeX < 0 || relativeY < 0 || relativeX >= petRect.width || relativeY >= petRect.height) {
+        return false;
+    }
+    
+    // Calculate which pixel in the source image was clicked
+    const imageWidth = petImageData.width;
+    const imageHeight = petImageData.height;
+    const displayWidth = petRect.width;
+    const displayHeight = petRect.height;
+    
+    const sourceX = Math.floor((relativeX / displayWidth) * imageWidth);
+    const sourceY = Math.floor((relativeY / displayHeight) * imageHeight);
+    
+    // Clamp to image bounds
+    const clampedX = Math.max(0, Math.min(imageWidth - 1, sourceX));
+    const clampedY = Math.max(0, Math.min(imageHeight - 1, sourceY));
+    
+    // Get pixel data (RGBA format)
+    const pixelIndex = (clampedY * imageWidth + clampedX) * 4;
+    const alpha = petImageData.data[pixelIndex + 3];
+    
+    // Return true if pixel is opaque (alpha > 0)
+    return alpha > 0;
+}
+
 function initializePet() {
     pet = document.getElementById('pet');
     
@@ -364,8 +472,12 @@ function initializePet() {
     pet.style.left = '50px';
     pet.style.top = '50px';
     pet.style.zIndex = '100';
+    pet.style.pointerEvents = 'auto'; // Ensure pet can receive clicks
     
-    // Add click handler for petting
+    // Load image data for pixel-perfect hit detection
+    loadPetImageData();
+    
+    // Add click handler for petting with pixel-perfect detection
     let mouseDownX = 0;
     let mouseDownY = 0;
     let hasMoved = false;
@@ -390,8 +502,59 @@ function initializePet() {
     });
     
     pet.addEventListener('mouseup', (e) => {
-        // Only trigger petting if it wasn't a drag (small movement)
-        if (!hasMoved && !isSleeping) {
+        // First, check if click hit a food or waste item (even if pet is visually on top)
+        // This ensures food/waste items are always clickable
+        let clickedItem = null;
+        
+        // Check all food items
+        for (let food of foodItems) {
+            if (!food.parentNode) continue; // Skip removed items
+            const foodRect = food.getBoundingClientRect();
+            if (e.clientX >= foodRect.left && e.clientX <= foodRect.right &&
+                e.clientY >= foodRect.top && e.clientY <= foodRect.bottom) {
+                clickedItem = food;
+                break;
+            }
+        }
+        
+        // Check all waste items if no food was clicked
+        if (!clickedItem) {
+            for (let waste of wasteItems) {
+                if (!waste.parentNode) continue; // Skip removed items
+                const wasteRect = waste.getBoundingClientRect();
+                if (e.clientX >= wasteRect.left && e.clientX <= wasteRect.right &&
+                    e.clientY >= wasteRect.top && e.clientY <= wasteRect.bottom) {
+                    clickedItem = waste;
+                    break;
+                }
+            }
+        }
+        
+        // If we clicked on a food/waste item, trigger its click event
+        if (clickedItem && !hasMoved) {
+            // Stop propagation to prevent pet click from firing
+            e.stopPropagation();
+            // Create and dispatch a click event on the item
+            const clickEvent = new MouseEvent('click', {
+                bubbles: true,
+                cancelable: true,
+                clientX: e.clientX,
+                clientY: e.clientY
+            });
+            clickedItem.dispatchEvent(clickEvent);
+            // Reset tracking and return early
+            mouseDownX = 0;
+            mouseDownY = 0;
+            hasMoved = false;
+            return;
+        }
+        
+        // Only trigger petting if:
+        // 1. It wasn't a drag
+        // 2. Pet is not sleeping
+        // 3. Click didn't hit food/waste
+        // 4. Click hit an actual opaque pixel in the pet sprite
+        if (!hasMoved && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
         }
         // Reset tracking
@@ -454,17 +617,28 @@ function updateSprite() {
     if (!pet) return;
     // Sleeping takes highest priority
     if (isSleeping) {
-        pet.src = sleepSprite;
+        if (pet.src !== sleepSprite) {
+            pet.src = sleepSprite;
+            reloadPetImageData(); // Reload image data for new sprite
+        }
         return;
     }
     // Happiness animation takes priority
     if (isHappy) {
         happinessSpriteIndex = (happinessSpriteIndex + 1) % happinessSprites.length;
-        pet.src = happinessSprites[happinessSpriteIndex];
+        const newSrc = happinessSprites[happinessSpriteIndex];
+        if (pet.src !== newSrc) {
+            pet.src = newSrc;
+            reloadPetImageData(); // Reload image data for new sprite
+        }
     } else if (isWalking || isEating) {
         // Animate when walking or eating (chewing)
         currentSpriteIndex = (currentSpriteIndex + 1) % sprites.length;
-        pet.src = sprites[currentSpriteIndex];
+        const newSrc = sprites[currentSpriteIndex];
+        if (pet.src !== newSrc) {
+            pet.src = newSrc;
+            reloadPetImageData(); // Reload image data for new sprite
+        }
     }
 }
 
@@ -961,7 +1135,8 @@ function spawnWaste() {
     waste.style.top = finalY + 'px';
     
     // Add click event to remove waste (cleaning)
-    waste.addEventListener('click', () => {
+    waste.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to pet
         removeWasteItem(waste);
     });
     
