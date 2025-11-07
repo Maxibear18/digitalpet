@@ -108,6 +108,38 @@ html, body {
     }
 }
 
+/* Sickness bubbles animation */
+.sickness-bubble {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(180, 100, 220, 0.6);
+    border: 2px solid rgba(160, 80, 200, 0.8);
+    z-index: 140;
+    pointer-events: none;
+    user-select: none;
+    animation: bubbleFloat 2.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes bubbleFloat {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.5);
+        opacity: 0;
+    }
+    15% {
+        opacity: 0.8;
+    }
+    85% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(-80px) translateX(var(--random-offset, 0px)) scale(1.2);
+        opacity: 0;
+    }
+}
+
 /* Stats bar styles - horizontal layout at top */
 .stats-bar {
     display: flex;

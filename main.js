@@ -5,6 +5,8 @@ let petWindow;
 let shopWindow;
 let statsWindow;
 let isPetSleeping = false; // Track pet sleep state for menu updates
+let isPetSick = false; // Track pet sickness state (starts healthy)
+let wasteCount = 0; // Track waste count for sickness chance calculation
 
 // Store stats even when stats window is closed
 let storedStats = {
@@ -41,6 +43,20 @@ let restDecayIntervalId = null;
 const REST_INCREMENT_INTERVAL = 45000; // 45 seconds in milliseconds
 const REST_INCREMENT_AMOUNT = 5; // Amount rest increases by while sleeping
 let restIncrementIntervalId = null;
+
+// Health decay system - runs in main process so it persists even when windows are closed
+// Only decays when pet IS sick
+const HEALTH_DECAY_INTERVAL = 90000; // 1.5 minutes in milliseconds
+const HEALTH_DECAY_AMOUNT = 10; // Amount health decreases by when sick
+const HEALTH_MAX = 100;
+const HEALTH_MIN = 0;
+let healthDecayIntervalId = null;
+
+// Sickness check system - runs in main process so it persists even when windows are closed
+const SICKNESS_CHECK_INTERVAL = 300000; // 5 minutes in milliseconds
+const BASE_SICKNESS_CHANCE = 0.05; // 5% base chance
+const WASTE_SICKNESS_CHANCE_PER_ITEM = 0.10; // 10% per waste item
+let sicknessCheckIntervalId = null;
 
 function createPetWindow() {
   // Create the browser window
@@ -91,6 +107,8 @@ function createPetWindow() {
   startHungerDecay();
   startHappinessDecay();
   startRestDecay();
+  startHealthDecay(); // Start health decay (will only run if pet is sick)
+  startSicknessCheck(); // Start sickness check system
   // Rest increment is started/stopped when pet sleeps/wakes
 }
 
@@ -265,6 +283,32 @@ ipcMain.on('pet:sleeping', (_event, sleeping) => {
     stopRestIncrement();
     startRestDecay();
   }
+});
+
+// Handle pet sickness state changes
+ipcMain.on('pet:sick', (_event, sick) => {
+  isPetSick = sick;
+  
+  if (sick) {
+    // Pet is sick - start health decay
+    startHealthDecay();
+    // Notify renderer to update appearance
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('pet:becameSick');
+    }
+  } else {
+    // Pet is cured - stop health decay
+    stopHealthDecay();
+    // Notify renderer to update appearance
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('pet:becameHealthy');
+    }
+  }
+});
+
+// Handle waste count updates from renderer
+ipcMain.on('waste:updateCount', (_event, count) => {
+  wasteCount = count;
 });
 
 // Handle request for stored stats (so pet window can load them on startup)
@@ -492,6 +536,107 @@ function stopRestIncrement() {
   if (restIncrementIntervalId) {
     clearInterval(restIncrementIntervalId);
     restIncrementIntervalId = null;
+  }
+}
+
+// Start health decay system - runs continuously in main process
+// Only decays when pet IS sick
+function startHealthDecay() {
+  // Clear any existing interval
+  if (healthDecayIntervalId) {
+    clearInterval(healthDecayIntervalId);
+  }
+  
+  // Don't start if pet is not sick
+  if (!isPetSick) {
+    return;
+  }
+  
+  // Set up interval to decrease health every 1.5 minutes (only when sick)
+  healthDecayIntervalId = setInterval(() => {
+    // Don't decay if pet is not sick
+    if (!isPetSick) {
+      stopHealthDecay();
+      return;
+    }
+    
+    if (!storedStats.health) {
+      storedStats.health = { value: 50, max: HEALTH_MAX };
+    }
+    
+    // Decrease health by the decay amount
+    const currentHealth = storedStats.health.value;
+    const newHealth = Math.max(HEALTH_MIN, currentHealth - HEALTH_DECAY_AMOUNT);
+    
+    // Update stored stat
+    storedStats.health.value = newHealth;
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+  }, HEALTH_DECAY_INTERVAL);
+}
+
+// Stop health decay system
+function stopHealthDecay() {
+  if (healthDecayIntervalId) {
+    clearInterval(healthDecayIntervalId);
+    healthDecayIntervalId = null;
+  }
+}
+
+// Start sickness check system - runs continuously in main process
+function startSicknessCheck() {
+  // Clear any existing interval
+  if (sicknessCheckIntervalId) {
+    clearInterval(sicknessCheckIntervalId);
+  }
+  
+  // Set up interval to check for sickness every 5 minutes
+  sicknessCheckIntervalId = setInterval(() => {
+    // Don't check if pet is already sick
+    if (isPetSick) {
+      return;
+    }
+    
+    // Calculate sickness chance: 5% base + 10% per waste item
+    const sicknessChance = BASE_SICKNESS_CHANCE + (wasteCount * WASTE_SICKNESS_CHANCE_PER_ITEM);
+    const randomValue = Math.random();
+    
+    // If random value is less than sickness chance, pet becomes sick
+    if (randomValue < sicknessChance) {
+      isPetSick = true;
+      startHealthDecay();
+      
+      // Notify renderer that pet became sick
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:becameSick');
+      }
+      
+      console.log(`Pet became sick! Chance was ${(sicknessChance * 100).toFixed(1)}% (${wasteCount} waste items)`);
+    }
+  }, SICKNESS_CHECK_INTERVAL);
+}
+
+// Stop sickness check system
+function stopSicknessCheck() {
+  if (sicknessCheckIntervalId) {
+    clearInterval(sicknessCheckIntervalId);
+    sicknessCheckIntervalId = null;
   }
 }
 

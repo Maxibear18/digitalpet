@@ -36,12 +36,27 @@ let wasteItems = []; // Array of all waste items on screen
 let wasteCount = 0; // Track total waste count for sickness mechanic
 let wasteSpawnIntervalId = null; // Interval ID for waste spawning
 
+// Sickness mechanic
+let isSick = false; // Pet starts healthy
+let medicineItems = []; // Array of all medicine items on screen
+let currentMedicineEl = null; // Currently targeted medicine item
+// Health decay is now handled in main.js for persistence
+let sicknessBubbles = []; // Array of sickness bubble elements
+let bubbleSpawnIntervalId = null; // Interval ID for spawning bubbles
+
 // Petting mechanic
 let petClickCount = 0; // Track number of clicks for petting
 const PETS_FOR_HAPPINESS = 10; // Number of pets needed to increase happiness
 let happiness = 50; // Happiness stat (0-100)
 const HAPPINESS_MAX = 100;
 const HAPPINESS_MIN = 0;
+
+// Health (0-100)
+let health = 50;
+const HEALTH_MAX = 100;
+const HEALTH_MIN = 0;
+const HEALTH_DECAY_INTERVAL = 90000; // 1.5 minutes in milliseconds
+const HEALTH_DECAY_AMOUNT = 10; // Amount health decreases by when sick
 
 // Hunger (0-100)
 let hunger = 50;
@@ -114,6 +129,9 @@ window.addEventListener('load', () => {
         } else if (key === 'happiness') {
             happiness = value;
             console.log('Loaded stored happiness:', happiness);
+        } else if (key === 'health') {
+            health = value;
+            console.log('Loaded stored health:', health);
         }
         
         loadedStatsCount++;
@@ -136,12 +154,23 @@ window.addEventListener('load', () => {
         setHunger(hunger);
         // Initialize happiness stat (this will also send it to main.js)
         setHappiness(happiness);
+        // Initialize health stat (this will also send it to main.js)
+        setHealth(health);
         // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
         
         // Start waste spawning system
         startWasteSpawning();
         
-        console.log('Pet initialized with stats - Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness);
+        // Update sickness state if already sick (notifies main process)
+        if (isSick) {
+            startHealthDecay(); // Notifies main.js to start health decay
+            updateSickAppearance();
+        }
+        
+        // Send initial waste count to main process
+        sendWasteCountUpdate();
+        
+        console.log('Pet initialized with stats - Health:', health, 'Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness, 'Sick:', isSick);
     }
     
     // Fallback: if stats don't load within 500ms, initialize with defaults
@@ -164,7 +193,12 @@ window.addEventListener('load', () => {
     // Handle spawning items from the Shop
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;
-        spawnFoodAndGoToIt(payload.imagePath);
+        // Check if it's medicine or food
+        if (payload.type === 'medicine') {
+            spawnMedicineAndGoToIt(payload.imagePath);
+        } else {
+            spawnFoodAndGoToIt(payload.imagePath);
+        }
     });
 
     // Handle sleep/wake actions
@@ -177,6 +211,27 @@ window.addEventListener('load', () => {
     ipcRenderer.on('action:wake', () => {
         if (isSleeping) {
             stopSleeping();
+        }
+    });
+    
+    // Listen for pet becoming sick from main process
+    ipcRenderer.on('pet:becameSick', () => {
+        if (!isSick) {
+            isSick = true;
+            startHealthDecay(); // Notifies main.js (though it should already be running)
+            updateSickAppearance();
+            console.log('Pet became sick!');
+        }
+    });
+    
+    // Listen for pet becoming healthy from main process
+    ipcRenderer.on('pet:becameHealthy', () => {
+        if (isSick) {
+            isSick = false;
+            stopHealthDecay();
+            stopSicknessBubbles();
+            updateSickAppearance();
+            console.log('Pet became healthy!');
         }
     });
     
@@ -198,14 +253,16 @@ window.addEventListener('load', () => {
             hunger = value;
             console.log('Hunger updated from main process:', hunger);
             
-            // If hunger decreased and food is available, pet should try to eat
-            if (hunger < oldHunger && hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy && !isSleeping) {
+            // If hunger decreased and food is available, pet should try to eat (but not if sick)
+            if (hunger < oldHunger && hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy && !isSleeping && !isSick) {
                 moveToNearestFood();
             }
         } else if (key === 'rest') {
             rest = value;
         } else if (key === 'happiness') {
             happiness = value;
+        } else if (key === 'health') {
+            health = value;
         }
     });
 });
@@ -245,10 +302,199 @@ function spawnFoodAndGoToIt(imagePath) {
     // Add to food items array
     foodItems.push(item);
 
-    // Move pet to nearest food only if hunger is less than 100
-    if (hunger < HUNGER_MAX) {
+    // Move pet to nearest food only if hunger is less than 100 and not sick
+    if (hunger < HUNGER_MAX && !isSick) {
         moveToNearestFood();
     }
+}
+
+// Spawn medicine and make pet go to it (only if sick)
+function spawnMedicineAndGoToIt(imagePath) {
+    if (!pet) return;
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+
+    const item = document.createElement('img');
+    item.src = imagePath;
+    item.alt = 'Medicine';
+    item.className = 'medicine-item'; // Add class to identify medicine items
+    item.style.position = 'absolute';
+    item.style.imageRendering = 'pixelated';
+    item.style.pointerEvents = 'auto'; // Make clickable
+    item.style.cursor = 'pointer'; // Show pointer cursor
+    item.style.zIndex = '95'; // Higher than food so it's more visible
+    item.style.width = '48px';
+    item.style.height = 'auto';
+
+    // Spawn at a random location within container
+    const rect = container.getBoundingClientRect();
+    const spawnX = Math.max(0, Math.min(rect.width - 48, Math.random() * (rect.width - 48)));
+    const spawnY = Math.max(0, Math.min(rect.height - 48, Math.random() * (rect.height - 48)));
+    item.style.left = spawnX + 'px';
+    item.style.top = spawnY + 'px';
+
+    // Add click event to remove medicine
+    item.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to pet
+        removeMedicineItem(item);
+    });
+
+    container.appendChild(item);
+    
+    // Add to medicine items array
+    medicineItems.push(item);
+
+    // Move pet to nearest medicine only if sick
+    if (isSick) {
+        moveToNearestMedicine();
+    }
+}
+
+// Remove a medicine item when clicked by user
+function removeMedicineItem(medicineItem) {
+    if (!medicineItem || !medicineItem.parentNode) return;
+    
+    // Remove from DOM
+    medicineItem.parentNode.removeChild(medicineItem);
+    
+    // Remove from medicine items array
+    medicineItems = medicineItems.filter(med => med !== medicineItem);
+    
+    // If this was the current target, clear it and find nearest medicine if available
+    if (currentMedicineEl === medicineItem) {
+        currentMedicineEl = null;
+        if (medicineItems.length > 0 && isSick) {
+            moveToNearestMedicine();
+        }
+    }
+}
+
+// Find all medicine items on screen and return the nearest one to the pet
+function findNearestMedicine() {
+    if (!pet || medicineItems.length === 0) return null;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return null;
+    
+    let nearestMedicine = null;
+    let minDistance = Infinity;
+    
+    // Filter out any medicine items that have been removed from DOM
+    medicineItems = medicineItems.filter(med => {
+        if (!med.parentNode) return false; // Item was removed
+        return true;
+    });
+    
+    if (medicineItems.length === 0) return null;
+    
+    // Find nearest medicine item
+    medicineItems.forEach(med => {
+        const medX = parseFloat(med.style.left);
+        const medY = parseFloat(med.style.top);
+        
+        // Calculate distance from pet to medicine
+        const dx = medX - petX;
+        const dy = medY - petY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestMedicine = med;
+        }
+    });
+    
+    return nearestMedicine;
+}
+
+// Move pet to the nearest medicine item (only if sick)
+function moveToNearestMedicine() {
+    if (!pet || !isSick) return; // Only go to medicine if sick
+    
+    const nearestMedicine = findNearestMedicine();
+    if (!nearestMedicine) return;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    currentMedicineEl = nearestMedicine;
+    
+    // Get medicine position
+    const medX = parseFloat(nearestMedicine.style.left);
+    const medY = parseFloat(nearestMedicine.style.top);
+    
+    isEating = false;
+    
+    // Interrupt any current behavior and immediately walk toward the medicine
+    isWalking = true;
+    isHappy = false; // Stop happiness animation if it's playing
+    
+    // Aim pet so its center aligns over the medicine center (pet ~120px, medicine ~48px)
+    const petWidth = 120;
+    const petHeight = 120;
+    const medWidth = 48;
+    const medHeight = 48;
+    let desiredX = medX + (medWidth / 2) - (petWidth / 2);
+    let desiredY = medY + (medHeight / 2) - (petHeight / 2);
+    // Nudge slightly toward the medicine so the pet overlaps it more
+    desiredX -= 8;
+    desiredY -= 6;
+    targetX = Math.max(0, Math.min(desiredX, rect.width - petWidth));
+    targetY = Math.max(0, Math.min(desiredY, rect.height - petHeight));
+}
+
+// Begin eating medicine
+function beginEatingMedicine() {
+    // Verify medicine still exists and is in the medicine items array
+    if (!currentMedicineEl || !currentMedicineEl.parentNode || isEating) {
+        // Medicine was removed or invalid, find nearest medicine if available
+        if (medicineItems.length > 0 && isSick) {
+            moveToNearestMedicine();
+        }
+        return;
+    }
+    
+    // Verify this medicine is still in our medicine items array
+    if (!medicineItems.includes(currentMedicineEl)) {
+        // Medicine was removed from array but element still exists, find nearest
+        if (medicineItems.length > 0 && isSick) {
+            moveToNearestMedicine();
+        }
+        return;
+    }
+    
+    // Arrived at medicine: stop moving and eat
+    isWalking = false;
+    isEating = true;
+    
+    if (eatingTimeoutId) {
+        clearTimeout(eatingTimeoutId);
+        eatingTimeoutId = null;
+    }
+    
+    eatingTimeoutId = setTimeout(() => {
+        finishEatingMedicine();
+    }, 5000); // 5 seconds
+}
+
+// Finish eating medicine and cure sickness
+function finishEatingMedicine() {
+    // Remove the medicine element that was just eaten
+    if (currentMedicineEl && currentMedicineEl.parentNode) {
+        currentMedicineEl.parentNode.removeChild(currentMedicineEl);
+    }
+    
+    // Remove from medicine items array
+    medicineItems = medicineItems.filter(med => med !== currentMedicineEl);
+    
+    currentMedicineEl = null;
+    isEating = false;
+    
+    // Cure the sickness
+    cureSickness();
+    
+    // Play happiness animation
+    playHappinessAnimation(false);
 }
 
 // Remove a food item when clicked by user
@@ -311,7 +557,8 @@ function findNearestFood() {
 
 // Move pet to the nearest food item
 function moveToNearestFood() {
-    if (!pet || hunger >= HUNGER_MAX) return;
+    // Don't move to food if sick - pet doesn't want to eat when sick
+    if (!pet || hunger >= HUNGER_MAX || isSick) return;
     
     const nearestFood = findNearestFood();
     if (!nearestFood) return;
@@ -474,6 +721,9 @@ function initializePet() {
     pet.style.zIndex = '100';
     pet.style.pointerEvents = 'auto'; // Ensure pet can receive clicks
     
+    // Update appearance based on sickness state
+    updateSickAppearance();
+    
     // Load image data for pixel-perfect hit detection
     loadPetImageData();
     
@@ -517,7 +767,20 @@ function initializePet() {
             }
         }
         
-        // Check all waste items if no food was clicked
+        // Check all medicine items if no food was clicked
+        if (!clickedItem) {
+            for (let med of medicineItems) {
+                if (!med.parentNode) continue; // Skip removed items
+                const medRect = med.getBoundingClientRect();
+                if (e.clientX >= medRect.left && e.clientX <= medRect.right &&
+                    e.clientY >= medRect.top && e.clientY <= medRect.bottom) {
+                    clickedItem = med;
+                    break;
+                }
+            }
+        }
+        
+        // Check all waste items if no food or medicine was clicked
         if (!clickedItem) {
             for (let waste of wasteItems) {
                 if (!waste.parentNode) continue; // Skip removed items
@@ -530,7 +793,7 @@ function initializePet() {
             }
         }
         
-        // If we clicked on a food/waste item, trigger its click event
+        // If we clicked on a food/medicine/waste item, trigger its click event
         if (clickedItem && !hasMoved) {
             // Stop propagation to prevent pet click from firing
             e.stopPropagation();
@@ -552,7 +815,7 @@ function initializePet() {
         // Only trigger petting if:
         // 1. It wasn't a drag
         // 2. Pet is not sleeping
-        // 3. Click didn't hit food/waste
+        // 3. Click didn't hit food/medicine/waste
         // 4. Click hit an actual opaque pixel in the pet sprite
         if (!hasMoved && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
@@ -620,6 +883,7 @@ function updateSprite() {
         if (pet.src !== sleepSprite) {
             pet.src = sleepSprite;
             reloadPetImageData(); // Reload image data for new sprite
+            // Bubbles continue automatically, no need to update
         }
         return;
     }
@@ -630,6 +894,7 @@ function updateSprite() {
         if (pet.src !== newSrc) {
             pet.src = newSrc;
             reloadPetImageData(); // Reload image data for new sprite
+            // Bubbles continue automatically, no need to update
         }
     } else if (isWalking || isEating) {
         // Animate when walking or eating (chewing)
@@ -638,6 +903,7 @@ function updateSprite() {
         if (pet.src !== newSrc) {
             pet.src = newSrc;
             reloadPetImageData(); // Reload image data for new sprite
+            // Bubbles continue automatically, no need to update
         }
     }
 }
@@ -646,8 +912,21 @@ function updatePosition() {
     if (!pet) return;
     // Don't move when sleeping
     if (isSleeping) return;
+    
+    // If sick and medicine is present, move to nearest medicine (priority over food)
+    if (isSick && medicineItems.length > 0 && !isEating) {
+        // Check if we have a valid current medicine target
+        if (!currentMedicineEl || !currentMedicineEl.parentNode) {
+            // Current medicine was removed or invalid, find nearest
+            moveToNearestMedicine();
+        }
+        if (currentMedicineEl) {
+            isWalking = true;
+        }
+    }
     // If food is present and not eating yet, force walking and move to nearest food
-    if (foodItems.length > 0 && !isEating && hunger < HUNGER_MAX) {
+    // But don't do this if sick - pet doesn't want to eat when sick
+    else if (foodItems.length > 0 && !isEating && hunger < HUNGER_MAX && !isSick) {
         // Check if we have a valid current food target
         if (!currentFoodEl || !currentFoodEl.parentNode) {
             // Current food was removed or invalid, find nearest
@@ -672,7 +951,12 @@ function updatePosition() {
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     // If close enough to target
-    if (distance < 5) { // Increased threshold to ensure pet reaches food
+    if (distance < 5) { // Increased threshold to ensure pet reaches target
+        // If target is medicine, start eating medicine
+        if (currentMedicineEl) {
+            beginEatingMedicine();
+            return;
+        }
         // If target is food, start eating
         if (currentFoodEl) {
             beginEating();
@@ -685,8 +969,10 @@ function updatePosition() {
     
     // Move towards target
     if (distance > 0) {
-        petX += (dx / distance) * walkSpeed;
-        petY += (dy / distance) * walkSpeed;
+        // Move slower when sick
+        const currentSpeed = isSick ? walkSpeed * 0.5 : walkSpeed;
+        petX += (dx / distance) * currentSpeed;
+        petY += (dy / distance) * currentSpeed;
     }
     
     // Keep within bounds
@@ -720,8 +1006,10 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
-    // Disable random state changes while eating, sleeping, during happiness animation, or when food is present
-    if (isEating || isSleeping || isHappy || (foodItems.length > 0 && hunger < HUNGER_MAX)) return;
+    // Disable random state changes while eating, sleeping, during happiness animation, when food is present, or when medicine is present
+    if (isEating || isSleeping || isHappy || 
+        (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) || 
+        (medicineItems.length > 0 && isSick)) return;
     if (currentTime >= nextStateChangeTime) {
         isWalking = !isWalking;
         scheduleNextStateChange();
@@ -780,10 +1068,16 @@ function startAnimation() {
 }
 
 function beginEating() {
+    // Don't eat if sick - pet doesn't want to eat when sick
+    if (isSick) {
+        currentFoodEl = null;
+        return;
+    }
+    
     // Verify food still exists and is in the food items array
     if (!currentFoodEl || !currentFoodEl.parentNode || isEating) {
         // Food was removed or invalid, find nearest food if available
-        if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+        if (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) {
             moveToNearestFood();
         }
         return;
@@ -792,7 +1086,7 @@ function beginEating() {
     // Verify this food is still in our food items array
     if (!foodItems.includes(currentFoodEl)) {
         // Food was removed from array but element still exists, find nearest
-        if (foodItems.length > 0 && hunger < HUNGER_MAX) {
+        if (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) {
             moveToNearestFood();
         }
         return;
@@ -901,6 +1195,173 @@ function setHappiness(value) {
     try {
         ipcRenderer.send('stats:update', { key: 'happiness', value: happiness, max: HAPPINESS_MAX });
     } catch (_) {}
+}
+
+function setHealth(value) {
+    health = Math.max(HEALTH_MIN, Math.min(HEALTH_MAX, value));
+    // Update stat bar directly
+    updateStatBar('health', health, HEALTH_MAX);
+    // Notify main to store the update
+    try {
+        ipcRenderer.send('stats:update', { key: 'health', value: health, max: HEALTH_MAX });
+    } catch (_) {}
+}
+
+// Update pet appearance when sick (green bubbles)
+function updateSickAppearance() {
+    if (!pet) return;
+    if (isSick) {
+        // Start spawning green bubbles
+        startSicknessBubbles();
+    } else {
+        // Stop bubbles and remove them
+        stopSicknessBubbles();
+        pet.style.filter = 'none';
+    }
+}
+
+// Start spawning green bubbles when sick
+function startSicknessBubbles() {
+    // Clear any existing interval
+    if (bubbleSpawnIntervalId) {
+        clearInterval(bubbleSpawnIntervalId);
+    }
+    
+    // Don't start if not sick
+    if (!isSick) return;
+    
+    // Spawn a bubble every 800ms
+    bubbleSpawnIntervalId = setInterval(() => {
+        if (!isSick || !pet) {
+            stopSicknessBubbles();
+            return;
+        }
+        createSicknessBubble();
+    }, 800);
+}
+
+// Stop spawning bubbles and remove existing ones
+function stopSicknessBubbles() {
+    // Clear spawn interval
+    if (bubbleSpawnIntervalId) {
+        clearInterval(bubbleSpawnIntervalId);
+        bubbleSpawnIntervalId = null;
+    }
+    
+    // Remove all bubbles
+    sicknessBubbles.forEach(bubble => {
+        if (bubble.parentNode) {
+            bubble.parentNode.removeChild(bubble);
+        }
+    });
+    sicknessBubbles = [];
+}
+
+// Find a random opaque pixel position on the sprite
+function findRandomOpaquePixel() {
+    if (!pet || !petImageLoaded || !petImageData) {
+        // Fallback: return center of pet if image data not loaded
+        const petWidth = 120;
+        const petHeight = 120;
+        return {
+            x: petX + petWidth / 2,
+            y: petY + petHeight / 2
+        };
+    }
+    
+    const petRect = pet.getBoundingClientRect();
+    const imageWidth = petImageData.width;
+    const imageHeight = petImageData.height;
+    const displayWidth = petRect.width;
+    const displayHeight = petRect.height;
+    
+    // Try up to 50 random positions to find an opaque pixel
+    for (let i = 0; i < 50; i++) {
+        const randomImageX = Math.floor(Math.random() * imageWidth);
+        const randomImageY = Math.floor(Math.random() * imageHeight);
+        
+        // Get pixel data (RGBA format)
+        const pixelIndex = (randomImageY * imageWidth + randomImageX) * 4;
+        const alpha = petImageData.data[pixelIndex + 3];
+        
+        // If pixel is opaque, convert to display coordinates
+        if (alpha > 0) {
+            const displayX = petX + (randomImageX / imageWidth) * displayWidth;
+            const displayY = petY + (randomImageY / imageHeight) * displayHeight;
+            return { x: displayX, y: displayY };
+        }
+    }
+    
+    // If no opaque pixel found after 50 tries, return center as fallback
+    const petWidth = 120;
+    const petHeight = 120;
+    return {
+        x: petX + petWidth / 2,
+        y: petY + petHeight / 2
+    };
+}
+
+// Create a single purple bubble that floats up from an opaque pixel of the pet
+function createSicknessBubble() {
+    if (!pet) return;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    // Find a random opaque pixel position
+    const bubblePos = findRandomOpaquePixel();
+    
+    // Create bubble element
+    const bubble = document.createElement('div');
+    bubble.className = 'sickness-bubble';
+    container.appendChild(bubble);
+    sicknessBubbles.push(bubble);
+    
+    // Position bubble at the opaque pixel location
+    bubble.style.left = bubblePos.x + 'px';
+    bubble.style.top = bubblePos.y + 'px';
+    
+    // Add random horizontal drift for more natural movement (-15 to +15 pixels)
+    const horizontalDrift = (Math.random() - 0.5) * 30;
+    bubble.style.setProperty('--random-offset', horizontalDrift + 'px');
+    
+    // Remove bubble after animation completes (2.5 seconds)
+    setTimeout(() => {
+        if (bubble.parentNode) {
+            bubble.parentNode.removeChild(bubble);
+            // Remove from array
+            sicknessBubbles = sicknessBubbles.filter(b => b !== bubble);
+        }
+    }, 2500);
+}
+
+// Start health decay when sick (notifies main process)
+function startHealthDecay() {
+    // Notify main process that pet is sick
+    // Health decay is now handled in main.js so it persists even when windows are minimized
+    try {
+        ipcRenderer.send('pet:sick', true);
+    } catch (_) {}
+}
+
+// Stop health decay (notifies main process)
+function stopHealthDecay() {
+    // Notify main process that pet is cured
+    // Health decay is now handled in main.js so it persists even when windows are minimized
+    try {
+        ipcRenderer.send('pet:sick', false);
+    } catch (_) {}
+}
+
+// Cure sickness
+function cureSickness() {
+    if (!isSick) return;
+    
+    isSick = false;
+    stopHealthDecay(); // Notifies main.js to stop health decay
+    stopSicknessBubbles(); // Stop bubbles
+    updateSickAppearance();
+    console.log('Pet has been cured!');
 }
 
 // Handle pet click for petting
@@ -1035,6 +1496,7 @@ function startSleeping() {
     
     // Change sprite to sleep sprite
     pet.src = sleepSprite;
+    updateSickAppearance(); // Update bubbles if sick
     
     // Create sleeping Z's
     createSleepZs();
@@ -1059,11 +1521,17 @@ function stopSleeping() {
     // Reset to normal sprite
     currentSpriteIndex = 0;
     pet.src = sprites[0];
+    updateSickAppearance(); // Update bubbles if sick
     
     // Resume normal behavior
-    isWalking = true;
-    scheduleNextStateChange();
-    chooseNewTarget();
+    // If sick and medicine is available, go to medicine, otherwise resume normal walking
+    if (isSick && medicineItems.length > 0) {
+        moveToNearestMedicine();
+    } else {
+        isWalking = true;
+        scheduleNextStateChange();
+        chooseNewTarget();
+    }
     
     // Notify main process that pet is awake (to update menu)
     try {
@@ -1146,13 +1614,8 @@ function spawnWaste() {
     wasteItems.push(waste);
     wasteCount++;
     
-    // TODO: Implement sickness mechanic based on waste count
-    // The more waste on screen, the higher the chance the pet gets sick
-    // Example logic:
-    // - Calculate sickness chance based on wasteCount (e.g., wasteCount * 2% chance per minute)
-    // - When pet gets sick, decrease health or apply status effect
-    // - Consider adding visual indicators for sickness
-    // - Maybe add medicine items to cure sickness
+    // Notify main process of waste count update
+    sendWasteCountUpdate();
     
     console.log('Waste spawned. Total waste count:', wasteCount);
 }
@@ -1168,5 +1631,15 @@ function removeWasteItem(wasteItem) {
     wasteItems = wasteItems.filter(waste => waste !== wasteItem);
     wasteCount = Math.max(0, wasteCount - 1);
     
+    // Notify main process of waste count update
+    sendWasteCountUpdate();
+    
     console.log('Waste cleaned. Remaining waste count:', wasteCount);
+}
+
+// Send waste count update to main process
+function sendWasteCountUpdate() {
+    try {
+        ipcRenderer.send('waste:updateCount', wasteCount);
+    } catch (_) {}
 }

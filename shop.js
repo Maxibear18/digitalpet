@@ -32,6 +32,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'food1',
                     imagePath: 'sprites/food/Food1.png'
                 });
+            } else if (item === 'medicine1') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'medicine',
+                    id: 'medicine1',
+                    imagePath: 'sprites/pill.png'
+                });
             }
         });
     });
