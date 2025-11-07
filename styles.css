@@ -140,6 +140,39 @@ html, body {
     }
 }
 
+/* Sweat particles animation */
+.sweat-particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; /* Teardrop shape */
+    background: rgba(200, 220, 255, 0.9);
+    border: 1px solid rgba(180, 200, 240, 1);
+    z-index: 141;
+    pointer-events: none;
+    user-select: none;
+    animation: sweatDrip 2s ease-in forwards;
+    opacity: 0;
+    box-shadow: 0 0 2px rgba(200, 220, 255, 0.5);
+}
+
+@keyframes sweatDrip {
+    0% {
+        transform: translateY(0) translateX(0) scale(0.6);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.9;
+    }
+    90% {
+        opacity: 0.9;
+    }
+    100% {
+        transform: translateY(60px) translateX(var(--random-offset, 0px)) scale(1);
+        opacity: 0;
+    }
+}
+
 /* Stats bar styles - horizontal layout at top */
 .stats-bar {
     display: flex;

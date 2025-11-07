@@ -5,6 +5,7 @@ let petWindow;
 let shopWindow;
 let statsWindow;
 let isPetSleeping = false; // Track pet sleep state for menu updates
+let isPetExercising = false; // Track pet exercise state for menu updates
 let isPetSick = false; // Track pet sickness state (starts healthy)
 let isPetDead = false; // Track pet death state
 let wasteCount = 0; // Track waste count for sickness chance calculation
@@ -154,7 +155,7 @@ function createPetWindow() {
   }
 }
 
-// Build menu with dynamic Sleep/Wake Up button
+// Build menu with dynamic Sleep/Wake Up and Exercise/Stop Exercise buttons
 function buildMenu() {
   const template = [
     {
@@ -174,7 +175,25 @@ function buildMenu() {
                 petWindow.webContents.send('action:sleep');
               }
             }
-          }
+          },
+          enabled: !isPetExercising // Disable sleep when exercising
+        },
+        {
+          label: isPetExercising ? 'Stop Exercising' : 'Exercise',
+          click: () => {
+            if (isPetExercising) {
+              // Stop exercising
+              if (petWindow && !petWindow.isDestroyed()) {
+                petWindow.webContents.send('action:stopExercise');
+              }
+            } else {
+              // Start exercising
+              if (petWindow && !petWindow.isDestroyed()) {
+                petWindow.webContents.send('action:exercise');
+              }
+            }
+          },
+          enabled: !isPetSleeping && !isPetDead // Disable exercise when sleeping or dead
         }
       ]
     },
@@ -365,11 +384,31 @@ ipcMain.on('pet:sleeping', (_event, sleeping) => {
     stopRestDecay();
     startRestIncrement();
     startHealthIncrement();
+    // Stop exercise if sleeping
+    if (isPetExercising) {
+      isPetExercising = false;
+      stopExerciseInterval();
+      buildMenu();
+    }
   } else {
     // Pet is awake - stop increments and start decay
     stopRestIncrement();
     stopHealthIncrement();
     startRestDecay();
+  }
+});
+
+// Handle pet exercise state changes to update menu
+ipcMain.on('pet:exercising', (_event, exercising) => {
+  isPetExercising = exercising;
+  buildMenu(); // Rebuild menu with updated Exercise/Stop Exercise button
+  
+  if (exercising) {
+    // Pet is exercising - start exercise interval
+    startExerciseInterval();
+  } else {
+    // Pet stopped exercising - stop exercise interval
+    stopExerciseInterval();
   }
 });
 
@@ -397,6 +436,13 @@ ipcMain.on('pet:sick', (_event, sick) => {
 // Handle pet death state changes
 ipcMain.on('pet:death', (_event, dead) => {
   isPetDead = dead;
+  
+  // Stop exercise if pet dies
+  if (dead && isPetExercising) {
+    isPetExercising = false;
+    stopExerciseInterval();
+    buildMenu();
+  }
 });
 
 // Handle pet evolution
@@ -948,6 +994,116 @@ function stopLowStatsHealthDecay() {
   if (lowStatsHealthDecayIntervalId) {
     clearInterval(lowStatsHealthDecayIntervalId);
     lowStatsHealthDecayIntervalId = null;
+  }
+}
+
+// Exercise interval system - runs in main process so it persists even when windows are closed
+// Only runs when pet IS exercising
+const EXERCISE_INTERVAL = 60000; // 1 minute in milliseconds
+const EXERCISE_EXP_GAIN = 30; // Experience gained per minute of exercise
+const EXERCISE_HUNGER_DECREASE = 15; // Hunger decreased per minute of exercise
+const EXERCISE_REST_DECREASE = 15; // Rest decreased per minute of exercise
+let exerciseIntervalId = null;
+
+// Start exercise interval system - runs continuously in main process
+// Only runs when pet IS exercising
+function startExerciseInterval() {
+  // Clear any existing interval
+  if (exerciseIntervalId) {
+    clearInterval(exerciseIntervalId);
+  }
+  
+  // Don't start if pet is not exercising
+  if (!isPetExercising) {
+    return;
+  }
+  
+  // Set up interval to update stats every minute (only when exercising)
+  exerciseIntervalId = setInterval(() => {
+    // Don't update if pet is not exercising
+    if (!isPetExercising) {
+      stopExerciseInterval();
+      return;
+    }
+    
+    // Gain experience (30 per minute)
+    if (!storedStats.experience) {
+      storedStats.experience = { value: 0, max: 100 };
+    }
+    const currentExp = storedStats.experience.value;
+    const newExp = Math.min(100, currentExp + EXERCISE_EXP_GAIN);
+    storedStats.experience.value = newExp;
+    
+    // Send experience update to pet window (but not to stats window, as it's hidden)
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'experience',
+        value: newExp,
+        max: 100
+      });
+    }
+    
+    // Decrease hunger (15 per minute)
+    if (!storedStats.hunger) {
+      storedStats.hunger = { value: 50, max: HUNGER_MAX };
+    }
+    const currentHunger = storedStats.hunger.value;
+    const newHunger = Math.max(HUNGER_MIN, currentHunger - EXERCISE_HUNGER_DECREASE);
+    storedStats.hunger.value = newHunger;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'hunger',
+        value: newHunger,
+        max: HUNGER_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'hunger',
+        value: newHunger,
+        max: HUNGER_MAX
+      });
+    }
+    
+    // Decrease rest (15 per minute)
+    if (!storedStats.rest) {
+      storedStats.rest = { value: 50, max: REST_MAX };
+    }
+    const currentRest = storedStats.rest.value;
+    const newRest = Math.max(REST_MIN, currentRest - EXERCISE_REST_DECREASE);
+    storedStats.rest.value = newRest;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: REST_MAX
+      });
+    }
+    
+    console.log(`Exercise update: +${EXERCISE_EXP_GAIN} exp, -${EXERCISE_HUNGER_DECREASE} hunger, -${EXERCISE_REST_DECREASE} rest`);
+  }, EXERCISE_INTERVAL);
+}
+
+// Stop exercise interval system
+function stopExerciseInterval() {
+  if (exerciseIntervalId) {
+    clearInterval(exerciseIntervalId);
+    exerciseIntervalId = null;
   }
 }
 

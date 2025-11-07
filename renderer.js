@@ -35,6 +35,11 @@ function getHappinessSprites() {
     return getCurrentSprites().happiness;
 }
 
+// Get exercise sprites for current evolution stage (sprites 1 and 3, same as happiness)
+function getExerciseSprites() {
+    return getCurrentSprites().happiness;
+}
+
 // Get sleep sprite for current evolution stage
 function getSleepSprite() {
     return getCurrentSprites().sleep;
@@ -89,11 +94,14 @@ let isWalking = true; // Walking state
 let isEating = false; // Eating state
 let isHappy = false; // Happiness animation state
 let isSleeping = false; // Sleeping state
+let isExercising = false; // Exercising state
 let currentFoodEl = null; // Currently targeted food item
 let foodItems = []; // Array of all food items on screen
 let eatingTimeoutId = null;
 let happinessSpriteIndex = 0; // Current sprite in happiness animation
 let sleepZs = []; // Array of sleeping Z elements
+let sweatParticles = []; // Array of sweat particle elements
+let sweatSpawnIntervalId = null; // Interval ID for spawning sweat particles
 let wasteItems = []; // Array of all waste items on screen
 let wasteCount = 0; // Track total waste count for sickness mechanic
 let wasteSpawnIntervalId = null; // Interval ID for waste spawning
@@ -311,7 +319,7 @@ window.addEventListener('load', () => {
 
     // Handle sleep/wake actions
     ipcRenderer.on('action:sleep', () => {
-        if (!isSleeping) {
+        if (!isSleeping && !isExercising) {
             startSleeping();
         }
     });
@@ -319,6 +327,19 @@ window.addEventListener('load', () => {
     ipcRenderer.on('action:wake', () => {
         if (isSleeping) {
             stopSleeping();
+        }
+    });
+
+    // Handle exercise/stop exercise actions
+    ipcRenderer.on('action:exercise', () => {
+        if (!isExercising && !isSleeping && !isDead) {
+            startExercising();
+        }
+    });
+
+    ipcRenderer.on('action:stopExercise', () => {
+        if (isExercising) {
+            stopExercising();
         }
     });
     
@@ -407,8 +428,10 @@ window.addEventListener('load', () => {
         const value = typeof payload.value === 'number' ? payload.value : 0;
         const max = typeof payload.max === 'number' ? payload.max : 100;
         
-        // Update the stat bar in the pet window
-        updateStatBar(key, value, max);
+        // Update the stat bar in the pet window (except for experience, which is hidden)
+        if (key !== 'experience') {
+            updateStatBar(key, value, max);
+        }
         
         // Update local variables when stats change from main process
         if (key === 'hunger') {
@@ -416,8 +439,8 @@ window.addEventListener('load', () => {
             hunger = value;
             console.log('Hunger updated from main process:', hunger);
             
-            // If hunger decreased and food is available, pet should try to eat (but not if sick)
-            if (hunger < oldHunger && hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy && !isSleeping && !isSick) {
+            // If hunger decreased and food is available, pet should try to eat (but not if sick, sleeping, or exercising)
+            if (hunger < oldHunger && hunger < HUNGER_MAX && foodItems.length > 0 && !isEating && !isHappy && !isSleeping && !isSick && !isExercising) {
                 moveToNearestFood();
             }
         } else if (key === 'rest') {
@@ -434,6 +457,13 @@ window.addEventListener('load', () => {
             // Check if pet was revived (health > 0 after being dead)
             else if (health > 0 && isDead) {
                 revivePet();
+            }
+        } else if (key === 'experience') {
+            const oldExperience = experience;
+            experience = value;
+            // Check if pet should evolve (experience reached max)
+            if (experience >= 100 && oldExperience < 100 && !isEvolving) {
+                evolvePet();
             }
         }
     });
@@ -933,8 +963,8 @@ function findNearestFood() {
 
 // Move pet to the nearest food item
 function moveToNearestFood() {
-    // Don't move to food if dead, sick, or full
-    if (!pet || isDead || hunger >= HUNGER_MAX || isSick) return;
+    // Don't move to food if dead, sick, full, sleeping, or exercising
+    if (!pet || isDead || hunger >= HUNGER_MAX || isSick || isSleeping || isExercising) return;
     
     const nearestFood = findNearestFood();
     if (!nearestFood) return;
@@ -1205,10 +1235,10 @@ function initializePet() {
         
         // Only trigger petting if:
         // 1. It wasn't a drag
-        // 2. Pet is not dead or sleeping
+        // 2. Pet is not dead, sleeping, or exercising
         // 3. Click didn't hit food/medicine/medkit/waste
         // 4. Click hit an actual opaque pixel in the pet sprite
-        if (!hasMoved && !isDead && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
+        if (!hasMoved && !isDead && !isSleeping && !isExercising && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
         }
         // Reset tracking
@@ -1271,6 +1301,7 @@ function updateSprite() {
     
     const sleepSprite = getSleepSprite();
     const happinessSprites = getHappinessSprites();
+    const exerciseSprites = getExerciseSprites();
     const sprites = getWalkSprites();
     
     // Death takes highest priority - show sleep sprite but no Z's
@@ -1287,6 +1318,16 @@ function updateSprite() {
             pet.src = sleepSprite;
             reloadPetImageData(); // Reload image data for new sprite
             // Bubbles continue automatically, no need to update
+        }
+        return;
+    }
+    // Exercising takes third priority
+    if (isExercising) {
+        happinessSpriteIndex = (happinessSpriteIndex + 1) % exerciseSprites.length;
+        const newSrc = exerciseSprites[happinessSpriteIndex];
+        if (pet.src !== newSrc) {
+            pet.src = newSrc;
+            reloadPetImageData(); // Reload image data for new sprite
         }
         return;
     }
@@ -1313,8 +1354,8 @@ function updateSprite() {
 
 function updatePosition() {
     if (!pet) return;
-    // Don't move when dead, sleeping, or evolving
-    if (isDead || isSleeping || isEvolving) return;
+    // Don't move when dead, sleeping, exercising, or evolving
+    if (isDead || isSleeping || isExercising || isEvolving) return;
     
     // Priority order: medicine (if sick) > medkit > food (if not sick)
     // If sick and medicine is present, move to nearest medicine (highest priority)
@@ -1433,8 +1474,8 @@ function scheduleNextStateChange() {
 function checkStateChange(currentTime) {
     // Don't change state when dead
     if (isDead) return;
-    // Disable random state changes while eating, sleeping, during happiness animation, when food is present, when medicine is present, or when medkit is present
-    if (isEating || isSleeping || isHappy || 
+    // Disable random state changes while eating, sleeping, exercising, during happiness animation, when food is present, when medicine is present, or when medkit is present
+    if (isEating || isSleeping || isExercising || isHappy || 
         (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) || 
         (medicineItems.length > 0 && isSick) ||
         (medkitItems.length > 0)) return;
@@ -1464,8 +1505,8 @@ function animate() {
     // Check if we should change walking state
     checkStateChange(currentTime);
     
-    // Update sprite (when walking, eating, or happy)
-    if (isWalking || isEating || isHappy) {
+    // Update sprite (when walking, eating, happy, or exercising)
+    if (isWalking || isEating || isHappy || isExercising) {
         if (!lastSpriteUpdate) {
             lastSpriteUpdate = currentTime;
         }
@@ -1497,8 +1538,8 @@ function startAnimation() {
 }
 
 function beginEating() {
-    // Don't eat if dead or sick
-    if (isDead || isSick) {
+    // Don't eat if dead, sick, sleeping, or exercising
+    if (isDead || isSick || isSleeping || isExercising) {
         currentFoodEl = null;
         return;
     }
@@ -1662,6 +1703,11 @@ function triggerDeath() {
     isWalking = false;
     isEating = false;
     isHappy = false;
+    
+    // Stop exercising if exercising
+    if (isExercising) {
+        stopExercising();
+    }
     
     // Clear any targets
     currentFoodEl = null;
@@ -1916,6 +1962,11 @@ function stopPassiveExperienceGain() {
 function evolvePet() {
     if (isDead || isEvolving) return; // Can't evolve when dead or already evolving
     
+    // Stop exercising if exercising (exercise should not continue during evolution)
+    if (isExercising) {
+        stopExercising();
+    }
+    
     // Check if there's a next stage available
     const nextStage = currentEvolutionStage + 1;
     const nextStageKey = `stage${nextStage}`;
@@ -2039,7 +2090,7 @@ function evolvePet() {
 
 // Handle pet click for petting
 function handlePetClick() {
-    if (isDead || isSleeping) return; // Can't pet when dead or sleeping
+    if (isDead || isSleeping || isExercising) return; // Can't pet when dead, sleeping, or exercising
     
     // Increment click count
     petClickCount++;
@@ -2326,4 +2377,188 @@ function sendWasteCountUpdate() {
     try {
         ipcRenderer.send('waste:updateCount', wasteCount);
     } catch (_) {}
+}
+
+// Exercise system
+// Start exercising
+function startExercising() {
+    if (!pet || isExercising || isDead || isSleeping) return;
+    
+    isExercising = true;
+    isWalking = false;
+    isHappy = false;
+    isEating = false;
+    
+    // Clear any food/medicine targets
+    currentFoodEl = null;
+    currentMedicineEl = null;
+    currentMedkitEl = null;
+    
+    // Set sprite to first exercise sprite (sprite 1)
+    const exerciseSprites = getExerciseSprites();
+    happinessSpriteIndex = 0;
+    pet.src = exerciseSprites[happinessSpriteIndex];
+    reloadPetImageData();
+    
+    // Start spawning sweat particles
+    startSweatParticles();
+    
+    // Notify main process that pet is exercising
+    try {
+        ipcRenderer.send('pet:exercising', true);
+    } catch (_) {}
+    
+    console.log('Pet started exercising!');
+}
+
+// Stop exercising
+function stopExercising() {
+    if (!pet || !isExercising) return;
+    
+    isExercising = false;
+    
+    // Stop sweat particles
+    stopSweatParticles();
+    
+    // Reset to normal sprite
+    currentSpriteIndex = 0;
+    const sprites = getWalkSprites();
+    pet.src = sprites[0];
+    reloadPetImageData();
+    
+    // Resume normal behavior
+    // Priority: medicine (if sick) > medkit > food > normal walking
+    if (isSick && medicineItems.length > 0) {
+        moveToNearestMedicine();
+    } else if (medkitItems.length > 0) {
+        moveToNearestMedkit();
+    } else if (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) {
+        moveToNearestFood();
+    } else {
+        isWalking = true;
+        scheduleNextStateChange();
+        chooseNewTarget();
+    }
+    
+    // Notify main process that pet stopped exercising
+    try {
+        ipcRenderer.send('pet:exercising', false);
+    } catch (_) {}
+    
+    console.log('Pet stopped exercising!');
+}
+
+// Start spawning sweat particles when exercising
+function startSweatParticles() {
+    // Clear any existing interval
+    if (sweatSpawnIntervalId) {
+        clearInterval(sweatSpawnIntervalId);
+    }
+    
+    // Don't start if not exercising
+    if (!isExercising) return;
+    
+    // Spawn a sweat particle every 600ms (slightly faster than sickness bubbles)
+    sweatSpawnIntervalId = setInterval(() => {
+        if (!isExercising || !pet) {
+            stopSweatParticles();
+            return;
+        }
+        createSweatParticle();
+    }, 600);
+}
+
+// Stop spawning sweat particles and remove existing ones
+function stopSweatParticles() {
+    // Clear spawn interval
+    if (sweatSpawnIntervalId) {
+        clearInterval(sweatSpawnIntervalId);
+        sweatSpawnIntervalId = null;
+    }
+    
+    // Remove all sweat particles
+    sweatParticles.forEach(particle => {
+        if (particle.parentNode) {
+            particle.parentNode.removeChild(particle);
+        }
+    });
+    sweatParticles = [];
+}
+
+// Create a single sweat particle that drips down from the pet
+function createSweatParticle() {
+    if (!pet) return;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    // Find a random opaque pixel position on the upper part of the pet (where sweat would come from)
+    const sweatPos = findRandomOpaquePixelForSweat();
+    
+    // Create sweat particle element
+    const particle = document.createElement('div');
+    particle.className = 'sweat-particle';
+    container.appendChild(particle);
+    sweatParticles.push(particle);
+    
+    // Position particle at the opaque pixel location
+    particle.style.left = sweatPos.x + 'px';
+    particle.style.top = sweatPos.y + 'px';
+    
+    // Add random horizontal drift for more natural movement (-8 to +8 pixels)
+    const horizontalDrift = (Math.random() - 0.5) * 16;
+    particle.style.setProperty('--random-offset', horizontalDrift + 'px');
+    
+    // Remove particle after animation completes (2 seconds)
+    setTimeout(() => {
+        if (particle.parentNode) {
+            particle.parentNode.removeChild(particle);
+            // Remove from array
+            sweatParticles = sweatParticles.filter(p => p !== particle);
+        }
+    }, 2000);
+}
+
+// Find a random opaque pixel position on the upper part of the sprite (for sweat)
+function findRandomOpaquePixelForSweat() {
+    if (!pet || !petImageLoaded || !petImageData) {
+        // Fallback: return upper center of pet if image data not loaded
+        const { width: petWidth, height: petHeight } = getPetDimensions();
+        return {
+            x: petX + petWidth / 2 + (Math.random() - 0.5) * 20,
+            y: petY + petHeight * 0.2 + Math.random() * petHeight * 0.3
+        };
+    }
+    
+    const imageWidth = petImageData.width;
+    const imageHeight = petImageData.height;
+    const displayWidth = pet.getBoundingClientRect().width;
+    const displayHeight = pet.getBoundingClientRect().height;
+    
+    // Focus on upper 40% of the sprite (where sweat would come from head/upper body)
+    const upperPortion = 0.4;
+    
+    // Try up to 50 random positions to find an opaque pixel in the upper portion
+    for (let i = 0; i < 50; i++) {
+        const randomImageX = Math.floor(Math.random() * imageWidth);
+        const randomImageY = Math.floor(Math.random() * imageHeight * upperPortion); // Only upper portion
+        
+        // Get pixel data (RGBA format)
+        const pixelIndex = (randomImageY * imageWidth + randomImageX) * 4;
+        const alpha = petImageData.data[pixelIndex + 3];
+        
+        // If pixel is opaque, convert to display coordinates
+        if (alpha > 0) {
+            const displayX = petX + (randomImageX / imageWidth) * displayWidth;
+            const displayY = petY + (randomImageY / imageHeight) * displayHeight;
+            return { x: displayX, y: displayY };
+        }
+    }
+    
+    // If no opaque pixel found after 50 tries, return upper center as fallback
+    const { width: petWidth, height: petHeight } = getPetDimensions();
+    return {
+        x: petX + petWidth / 2 + (Math.random() - 0.5) * 20,
+        y: petY + petHeight * 0.2 + Math.random() * petHeight * 0.3
+    };
 }
