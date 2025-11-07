@@ -6,6 +6,7 @@ let shopWindow;
 let statsWindow;
 let isPetSleeping = false; // Track pet sleep state for menu updates
 let isPetSick = false; // Track pet sickness state (starts healthy)
+let isPetDead = false; // Track pet death state
 let wasteCount = 0; // Track waste count for sickness chance calculation
 
 // Store stats even when stats window is closed
@@ -77,6 +78,13 @@ const BASE_SICKNESS_CHANCE = 0.05; // 5% base chance
 const WASTE_SICKNESS_CHANCE_PER_ITEM = 0.10; // 10% per waste item
 let sicknessCheckIntervalId = null;
 
+// Health decay from low stats system - runs in main process so it persists even when windows are closed
+const LOW_STATS_HEALTH_DECAY_INTERVAL = 60000; // 1 minute in milliseconds
+const LOW_STATS_HEALTH_DECAY_SINGLE = 5; // Health decrease when 1 stat is at 0
+const LOW_STATS_HEALTH_DECAY_DOUBLE = 10; // Health decrease when 2 stats are at 0
+const LOW_STATS_HEALTH_DECAY_TRIPLE = 15; // Health decrease when all 3 stats are at 0
+let lowStatsHealthDecayIntervalId = null;
+
 function createPetWindow() {
   // Create the browser window
   petWindow = new BrowserWindow({
@@ -129,6 +137,7 @@ function createPetWindow() {
   startHealthDecay(); // Start health decay (will only run if pet is sick)
   startSicknessCheck(); // Start sickness check system
   startMoneyIncrement(); // Start money increment system
+  startLowStatsHealthDecay(); // Start health decay from low stats
   // Rest increment is started/stopped when pet sleeps/wakes
   
   // Send initial money to pet window
@@ -377,6 +386,11 @@ ipcMain.on('pet:sick', (_event, sick) => {
       petWindow.webContents.send('pet:becameHealthy');
     }
   }
+});
+
+// Handle pet death state changes
+ipcMain.on('pet:death', (_event, dead) => {
+  isPetDead = dead;
 });
 
 // Handle waste count updates from renderer
@@ -649,6 +663,16 @@ function startHealthIncrement() {
     // Update stored stat
     storedStats.health.value = newHealth;
     
+    // Check if pet was revived (health > 0 after being dead)
+    if (newHealth > 0 && isPetDead) {
+      isPetDead = false;
+      // Notify renderer that pet was revived
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:revived');
+      }
+      console.log('Pet has been revived!');
+    }
+    
     // Send update to pet window if it's open
     if (petWindow && !petWindow.isDestroyed()) {
       petWindow.webContents.send('stats:update', {
@@ -708,6 +732,16 @@ function startHealthDecay() {
     
     // Update stored stat
     storedStats.health.value = newHealth;
+    
+    // Check if pet died (health reached 0)
+    if (newHealth === 0 && currentHealth > 0 && !isPetDead) {
+      isPetDead = true;
+      // Notify renderer that pet died
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:died');
+      }
+      console.log('Pet has died!');
+    }
     
     // Send update to pet window if it's open
     if (petWindow && !petWindow.isDestroyed()) {
@@ -798,6 +832,103 @@ function stopMoneyIncrement() {
   if (moneyIncrementIntervalId) {
     clearInterval(moneyIncrementIntervalId);
     moneyIncrementIntervalId = null;
+  }
+}
+
+// Start health decay from low stats system - runs continuously in main process
+function startLowStatsHealthDecay() {
+  // Clear any existing interval
+  if (lowStatsHealthDecayIntervalId) {
+    clearInterval(lowStatsHealthDecayIntervalId);
+  }
+  
+  // Set up interval to check and decrease health every minute based on low stats
+  lowStatsHealthDecayIntervalId = setInterval(() => {
+    // Get current stat values
+    const currentHunger = storedStats.hunger ? storedStats.hunger.value : 50;
+    const currentRest = storedStats.rest ? storedStats.rest.value : 50;
+    const currentHappiness = storedStats.happiness ? storedStats.happiness.value : 50;
+    
+    // Count how many stats are at 0
+    let statsAtZero = 0;
+    if (currentHunger === 0) statsAtZero++;
+    if (currentRest === 0) statsAtZero++;
+    if (currentHappiness === 0) statsAtZero++;
+    
+    // Only decrease health if at least one stat is at 0
+    if (statsAtZero === 0) {
+      return; // No stats at 0, no health decrease
+    }
+    
+    // Calculate health decrease based on how many stats are at 0
+    let healthDecrease = 0;
+    if (statsAtZero === 1) {
+      healthDecrease = LOW_STATS_HEALTH_DECAY_SINGLE;
+    } else if (statsAtZero === 2) {
+      healthDecrease = LOW_STATS_HEALTH_DECAY_DOUBLE;
+    } else if (statsAtZero === 3) {
+      healthDecrease = LOW_STATS_HEALTH_DECAY_TRIPLE;
+    }
+    
+    // Decrease health
+    if (!storedStats.health) {
+      storedStats.health = { value: 50, max: HEALTH_MAX };
+    }
+    
+    const currentHealth = storedStats.health.value;
+    const newHealth = Math.max(HEALTH_MIN, currentHealth - healthDecrease);
+    
+    // Update stored stat
+    storedStats.health.value = newHealth;
+    
+    // Check if pet died (health reached 0)
+    if (newHealth === 0 && currentHealth > 0 && !isPetDead) {
+      isPetDead = true;
+      // Notify renderer that pet died
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:died');
+      }
+      console.log('Pet has died!');
+    }
+    // Check if pet was revived (health > 0 after being dead)
+    else if (newHealth > 0 && isPetDead) {
+      isPetDead = false;
+      // Notify renderer that pet was revived
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:revived');
+      }
+      console.log('Pet has been revived!');
+    }
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+    
+    if (healthDecrease > 0) {
+      console.log(`Health decreased by ${healthDecrease} due to ${statsAtZero} stat(s) at 0. New health: ${newHealth}`);
+    }
+  }, LOW_STATS_HEALTH_DECAY_INTERVAL);
+}
+
+// Stop health decay from low stats system
+function stopLowStatsHealthDecay() {
+  if (lowStatsHealthDecayIntervalId) {
+    clearInterval(lowStatsHealthDecayIntervalId);
+    lowStatsHealthDecayIntervalId = null;
   }
 }
 

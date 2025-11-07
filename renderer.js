@@ -44,6 +44,9 @@ let currentMedicineEl = null; // Currently targeted medicine item
 let sicknessBubbles = []; // Array of sickness bubble elements
 let bubbleSpawnIntervalId = null; // Interval ID for spawning bubbles
 
+// Death mechanic
+let isDead = false; // Pet death state
+
 // Medkit items
 let medkitItems = []; // Array of all medkit items on screen
 let currentMedkitEl = null; // Currently targeted medkit item
@@ -230,7 +233,7 @@ window.addEventListener('load', () => {
     
     // Listen for pet becoming sick from main process
     ipcRenderer.on('pet:becameSick', () => {
-        if (!isSick) {
+        if (!isSick && !isDead) {
             isSick = true;
             startHealthDecay(); // Notifies main.js (though it should already be running)
             updateSickAppearance();
@@ -240,12 +243,26 @@ window.addEventListener('load', () => {
     
     // Listen for pet becoming healthy from main process
     ipcRenderer.on('pet:becameHealthy', () => {
-        if (isSick) {
+        if (isSick && !isDead) {
             isSick = false;
             stopHealthDecay();
             stopSicknessBubbles();
             updateSickAppearance();
             console.log('Pet became healthy!');
+        }
+    });
+    
+    // Listen for pet death from main process
+    ipcRenderer.on('pet:died', () => {
+        if (!isDead) {
+            triggerDeath();
+        }
+    });
+    
+    // Listen for pet revival from main process
+    ipcRenderer.on('pet:revived', () => {
+        if (isDead) {
+            revivePet();
         }
     });
     
@@ -291,7 +308,16 @@ window.addEventListener('load', () => {
         } else if (key === 'happiness') {
             happiness = value;
         } else if (key === 'health') {
+            const oldHealth = health;
             health = value;
+            // Check if pet died (health reached 0)
+            if (health === 0 && oldHealth > 0 && !isDead) {
+                triggerDeath();
+            }
+            // Check if pet was revived (health > 0 after being dead)
+            else if (health > 0 && isDead) {
+                revivePet();
+            }
         }
     });
 });
@@ -437,7 +463,7 @@ function findNearestMedicine() {
 
 // Move pet to the nearest medicine item (only if sick)
 function moveToNearestMedicine() {
-    if (!pet || !isSick) return; // Only go to medicine if sick
+    if (!pet || isDead || !isSick) return; // Only go to medicine if sick and not dead
     
     const nearestMedicine = findNearestMedicine();
     if (!nearestMedicine) return;
@@ -474,10 +500,16 @@ function moveToNearestMedicine() {
 
 // Begin eating medicine
 function beginEatingMedicine() {
+    // Can't eat when dead
+    if (isDead) {
+        currentMedicineEl = null;
+        return;
+    }
+    
     // Verify medicine still exists and is in the medicine items array
     if (!currentMedicineEl || !currentMedicineEl.parentNode || isEating) {
         // Medicine was removed or invalid, find nearest medicine if available
-        if (medicineItems.length > 0 && isSick) {
+        if (medicineItems.length > 0 && isSick && !isDead) {
             moveToNearestMedicine();
         }
         return;
@@ -624,7 +656,7 @@ function findNearestMedkit() {
 
 // Move pet to the nearest medkit item (can be used anytime)
 function moveToNearestMedkit() {
-    if (!pet) return;
+    if (!pet || isDead) return; // Can't move when dead
     
     const nearestMedkit = findNearestMedkit();
     if (!nearestMedkit) return;
@@ -661,10 +693,16 @@ function moveToNearestMedkit() {
 
 // Begin eating medkit
 function beginEatingMedkit() {
+    // Can't eat when dead
+    if (isDead) {
+        currentMedkitEl = null;
+        return;
+    }
+    
     // Verify medkit still exists and is in the medkit items array
     if (!currentMedkitEl || !currentMedkitEl.parentNode || isEating) {
         // Medkit was removed or invalid, find nearest medkit if available
-        if (medkitItems.length > 0) {
+        if (medkitItems.length > 0 && !isDead) {
             moveToNearestMedkit();
         }
         return;
@@ -774,8 +812,8 @@ function findNearestFood() {
 
 // Move pet to the nearest food item
 function moveToNearestFood() {
-    // Don't move to food if sick - pet doesn't want to eat when sick
-    if (!pet || hunger >= HUNGER_MAX || isSick) return;
+    // Don't move to food if dead, sick, or full
+    if (!pet || isDead || hunger >= HUNGER_MAX || isSick) return;
     
     const nearestFood = findNearestFood();
     if (!nearestFood) return;
@@ -1044,10 +1082,10 @@ function initializePet() {
         
         // Only trigger petting if:
         // 1. It wasn't a drag
-        // 2. Pet is not sleeping
+        // 2. Pet is not dead or sleeping
         // 3. Click didn't hit food/medicine/medkit/waste
         // 4. Click hit an actual opaque pixel in the pet sprite
-        if (!hasMoved && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
+        if (!hasMoved && !isDead && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
         }
         // Reset tracking
@@ -1108,7 +1146,15 @@ function chooseNewTarget() {
 
 function updateSprite() {
     if (!pet) return;
-    // Sleeping takes highest priority
+    // Death takes highest priority - show sleep sprite but no Z's
+    if (isDead) {
+        if (pet.src !== sleepSprite) {
+            pet.src = sleepSprite;
+            reloadPetImageData(); // Reload image data for new sprite
+        }
+        return;
+    }
+    // Sleeping takes second priority
     if (isSleeping) {
         if (pet.src !== sleepSprite) {
             pet.src = sleepSprite;
@@ -1140,8 +1186,8 @@ function updateSprite() {
 
 function updatePosition() {
     if (!pet) return;
-    // Don't move when sleeping
-    if (isSleeping) return;
+    // Don't move when dead or sleeping
+    if (isDead || isSleeping) return;
     
     // Priority order: medicine (if sick) > medkit > food (if not sick)
     // If sick and medicine is present, move to nearest medicine (highest priority)
@@ -1253,6 +1299,8 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
+    // Don't change state when dead
+    if (isDead) return;
     // Disable random state changes while eating, sleeping, during happiness animation, when food is present, when medicine is present, or when medkit is present
     if (isEating || isSleeping || isHappy || 
         (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) || 
@@ -1316,8 +1364,8 @@ function startAnimation() {
 }
 
 function beginEating() {
-    // Don't eat if sick - pet doesn't want to eat when sick
-    if (isSick) {
+    // Don't eat if dead or sick
+    if (isDead || isSick) {
         currentFoodEl = null;
         return;
     }
@@ -1446,6 +1494,7 @@ function setHappiness(value) {
 }
 
 function setHealth(value) {
+    const oldHealth = health;
     health = Math.max(HEALTH_MIN, Math.min(HEALTH_MAX, value));
     // Update stat bar directly
     updateStatBar('health', health, HEALTH_MAX);
@@ -1454,6 +1503,76 @@ function setHealth(value) {
     try {
         ipcRenderer.send('stats:update', { key: 'health', value: health, max: HEALTH_MAX });
     } catch (_) {}
+    
+    // Check if pet died (health reached 0)
+    if (health === 0 && oldHealth > 0 && !isDead) {
+        triggerDeath();
+    }
+    // Check if pet was revived (health > 0 after being dead)
+    else if (health > 0 && isDead) {
+        revivePet();
+    }
+}
+
+// Trigger death when health reaches 0
+function triggerDeath() {
+    if (isDead) return;
+    
+    isDead = true;
+    
+    // Stop all movement and actions
+    isWalking = false;
+    isEating = false;
+    isHappy = false;
+    
+    // Clear any targets
+    currentFoodEl = null;
+    currentMedicineEl = null;
+    currentMedkitEl = null;
+    
+    // Stop bubbles if sick
+    stopSicknessBubbles();
+    
+    // Change to sleep sprite (death sprite)
+    if (pet) {
+        pet.src = sleepSprite;
+        // Don't show Z's for death
+        // Make sure Z's are removed if they exist
+        removeSleepZs();
+    }
+    
+    // Notify main process
+    try {
+        ipcRenderer.send('pet:death', true);
+    } catch (_) {}
+    
+    console.log('Pet has died!');
+}
+
+// Revive pet (for future implementation)
+function revivePet() {
+    if (!isDead) return;
+    
+    isDead = false;
+    
+    // Reset to normal sprite
+    if (pet && !isSleeping) {
+        currentSpriteIndex = 0;
+        pet.src = sprites[0];
+        updateSickAppearance(); // Reapply bubbles if sick
+    }
+    
+    // Resume normal behavior
+    isWalking = true;
+    scheduleNextStateChange();
+    chooseNewTarget();
+    
+    // Notify main process
+    try {
+        ipcRenderer.send('pet:death', false);
+    } catch (_) {}
+    
+    console.log('Pet has been revived!');
 }
 
 // Update pet appearance when sick (green bubbles)
@@ -1615,7 +1734,7 @@ function cureSickness() {
 
 // Handle pet click for petting
 function handlePetClick() {
-    if (isSleeping) return; // Can't pet while sleeping
+    if (isDead || isSleeping) return; // Can't pet when dead or sleeping
     
     // Increment click count
     petClickCount++;
@@ -1736,7 +1855,7 @@ function removeSleepZs() {
 
 // Start sleeping
 function startSleeping() {
-    if (!pet || isSleeping) return;
+    if (!pet || isSleeping || isDead) return; // Can't sleep when dead
     
     isSleeping = true;
     isWalking = false;
@@ -1747,8 +1866,10 @@ function startSleeping() {
     pet.src = sleepSprite;
     updateSickAppearance(); // Update bubbles if sick
     
-    // Create sleeping Z's
-    createSleepZs();
+    // Create sleeping Z's (only if not dead)
+    if (!isDead) {
+        createSleepZs();
+    }
     
     // Rest increment is now handled in main.js for persistence
     // Notify main process that pet is sleeping (to update menu)
@@ -1760,6 +1881,8 @@ function startSleeping() {
 // Stop sleeping
 function stopSleeping() {
     if (!pet || !isSleeping) return;
+    // Don't wake up if dead - pet stays in death state (sleep sprite)
+    if (isDead) return;
     
     isSleeping = false;
     
@@ -1814,8 +1937,8 @@ function startWasteSpawning() {
 function spawnWaste() {
     if (!pet) return;
     
-    // Don't spawn waste if pet is sleeping
-    if (isSleeping) {
+    // Don't spawn waste if pet is dead or sleeping
+    if (isDead || isSleeping) {
         return;
     }
     
