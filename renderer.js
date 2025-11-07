@@ -1,17 +1,79 @@
 const { ipcRenderer } = require('electron');
 
-// Sprite paths for walking cycle
-const sprites = [
-    'sprites/botamon.png',
-    'sprites/botamon 2.png'
-];
-// Sprite paths for happiness animation (cycles between 1 and 3)
-const happinessSprites = [
-    'sprites/botamon.png',
-    'sprites/botamon 3.png'
-];
-// Sleep sprite
-const sleepSprite = 'sprites/botamon 4.png';
+// Evolution and Sprite System
+// Easy to add new pets/evolutions: just add a new stage to petSprites with the sprite paths
+const petSprites = {
+    stage1: { // Botamon (initial form)
+        walk: ['sprites/botamon.png', 'sprites/botamon 2.png'],
+        happiness: ['sprites/botamon.png', 'sprites/botamon 3.png'],
+        sleep: 'sprites/botamon 4.png'
+    },
+    stage2: { // Koromon (evolved form) - Add your 4 sprites here
+        walk: ['sprites/koromon.png', 'sprites/koromon 2.png'],
+        happiness: ['sprites/koromon.png', 'sprites/koromon 3.png'],
+        sleep: 'sprites/koromon 4.png'
+    }
+    // Add more stages here for future evolutions:
+    // stage3: { walk: [...], happiness: [...], sleep: '...' }
+};
+
+let currentEvolutionStage = 1; // Start at stage 1 (Botamon)
+
+// Get current sprites based on evolution stage
+function getCurrentSprites() {
+    const stageKey = `stage${currentEvolutionStage}`;
+    return petSprites[stageKey] || petSprites.stage1; // Fallback to stage1 if stage doesn't exist
+}
+
+// Get walking sprites for current evolution stage
+function getWalkSprites() {
+    return getCurrentSprites().walk;
+}
+
+// Get happiness sprites for current evolution stage
+function getHappinessSprites() {
+    return getCurrentSprites().happiness;
+}
+
+// Get sleep sprite for current evolution stage
+function getSleepSprite() {
+    return getCurrentSprites().sleep;
+}
+
+// Get size multiplier for current evolution stage (1.0 = normal size)
+function getEvolutionSizeMultiplier() {
+    // Stage 1 (Botamon): normal size (1.0)
+    // Stage 2 (Koromon): slightly smaller (0.85)
+    if (currentEvolutionStage === 2) {
+        return 0.85; // 85% of original size
+    }
+    return 1.0; // Default size for stage 1 and above
+}
+
+// Update pet size based on evolution stage
+function updatePetSize() {
+    if (!pet) return;
+    
+    const sizeMultiplier = getEvolutionSizeMultiplier();
+    const baseWidth = 120; // Original width
+    const baseHeight = 120; // Original height (approximate, will be auto-calculated)
+    
+    const newWidth = baseWidth * sizeMultiplier;
+    pet.style.width = newWidth + 'px';
+    // Height will be auto-calculated to maintain aspect ratio
+}
+
+// Get current pet dimensions (accounts for evolution stage size)
+function getPetDimensions() {
+    const sizeMultiplier = getEvolutionSizeMultiplier();
+    const baseSize = 120;
+    return {
+        width: baseSize * sizeMultiplier,
+        height: baseSize * sizeMultiplier
+    };
+}
+
+// Legacy sprite variables (now use getters)
 let currentSpriteIndex = 0;
 
 // Pet position
@@ -46,6 +108,17 @@ let bubbleSpawnIntervalId = null; // Interval ID for spawning bubbles
 
 // Death mechanic
 let isDead = false; // Pet death state
+
+// Experience and Evolution system
+let experience = 0; // Current experience (hidden stat)
+const EXPERIENCE_MAX = 100; // Experience needed to evolve
+const EXPERIENCE_GAIN_EAT = 2; // Experience gained from eating
+const EXPERIENCE_GAIN_PET = 2; // Experience gained from petting
+const EXPERIENCE_GAIN_MOVE = 1; // Experience gained from moving
+const EXPERIENCE_GAIN_TIME_INTERVAL = 180000; // 3 minutes in milliseconds
+const EXPERIENCE_GAIN_TIME_AMOUNT = 10; // Experience gained every 3 minutes
+let experienceTimeIntervalId = null; // Interval for passive experience gain
+let isEvolving = false; // Track if evolution animation is playing
 
 // Medkit items
 let medkitItems = []; // Array of all medkit items on screen
@@ -120,7 +193,7 @@ window.addEventListener('load', () => {
     
     // Load stored stats from main process first
     let statsLoaded = false;
-    const statsToLoad = ['hunger', 'rest', 'health', 'happiness'];
+    const statsToLoad = ['hunger', 'rest', 'health', 'happiness', 'experience'];
     let loadedStatsCount = 0;
     
     // Listen for stored stats from main process
@@ -131,8 +204,10 @@ window.addEventListener('load', () => {
         const value = typeof payload.value === 'number' ? payload.value : (key === 'hunger' || key === 'rest' || key === 'happiness' ? 50 : 50);
         const max = typeof payload.max === 'number' ? payload.max : 100;
         
-        // Update the stat bar in the pet window
-        updateStatBar(key, value, max);
+        // Update the stat bar in the pet window (except for experience, which is hidden)
+        if (key !== 'experience') {
+            updateStatBar(key, value, max);
+        }
         
         // Update the corresponding variable
         if (key === 'hunger') {
@@ -147,6 +222,9 @@ window.addEventListener('load', () => {
         } else if (key === 'health') {
             health = value;
             console.log('Loaded stored health:', health);
+        } else if (key === 'experience') {
+            experience = value;
+            console.log('Loaded stored experience:', experience);
         }
         
         loadedStatsCount++;
@@ -171,6 +249,11 @@ window.addEventListener('load', () => {
         setHappiness(happiness);
         // Initialize health stat (this will also send it to main.js)
         setHealth(health);
+        // Initialize experience stat (hidden stat, not shown in UI)
+        // Note: Experience is loaded from main process via stats:load, but we send it back to persist
+        try {
+            ipcRenderer.send('stats:update', { key: 'experience', value: experience, max: EXPERIENCE_MAX });
+        } catch (_) {}
         // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
         
         // Start waste spawning system
@@ -185,7 +268,15 @@ window.addEventListener('load', () => {
         // Send initial waste count to main process
         sendWasteCountUpdate();
         
-        console.log('Pet initialized with stats - Health:', health, 'Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness, 'Sick:', isSick);
+        // Request evolution stage from main process
+        try {
+            ipcRenderer.send('pet:requestEvolutionStage');
+        } catch (_) {}
+        
+        // Start passive experience gain (experience just for existing)
+        startPassiveExperienceGain();
+        
+        console.log('Pet initialized with stats - Health:', health, 'Hunger:', hunger, 'Rest:', rest, 'Happiness:', happiness, 'Experience:', experience, 'Evolution Stage:', currentEvolutionStage, 'Sick:', isSick);
     }
     
     // Fallback: if stats don't load within 500ms, initialize with defaults
@@ -263,6 +354,32 @@ window.addEventListener('load', () => {
     ipcRenderer.on('pet:revived', () => {
         if (isDead) {
             revivePet();
+        }
+    });
+    
+    // Listen for evolution stage from main process
+    ipcRenderer.on('pet:evolutionStage', (_event, stage) => {
+        if (typeof stage === 'number' && stage >= 1) {
+            currentEvolutionStage = stage;
+            // Reload sprites for the correct evolution stage
+            const sprites = getWalkSprites();
+            const sleepSprite = getSleepSprite();
+            
+            // Update current sprite based on state
+            if (pet) {
+                if (isSleeping || isDead) {
+                    pet.src = sleepSprite;
+                } else if (isHappy) {
+                    const happinessSprites = getHappinessSprites();
+                    pet.src = happinessSprites[happinessSpriteIndex];
+                } else {
+                    pet.src = sprites[currentSpriteIndex];
+                }
+                reloadPetImageData();
+                // Update pet size based on evolution stage
+                updatePetSize();
+            }
+            console.log('Evolution stage loaded:', currentEvolutionStage);
         }
     });
     
@@ -484,9 +601,8 @@ function moveToNearestMedicine() {
     isWalking = true;
     isHappy = false; // Stop happiness animation if it's playing
     
-    // Aim pet so its center aligns over the medicine center (pet ~120px, medicine ~48px)
-    const petWidth = 120;
-    const petHeight = 120;
+    // Aim pet so its center aligns over the medicine center
+    const { width: petWidth, height: petHeight } = getPetDimensions();
     const medWidth = 48;
     const medHeight = 48;
     let desiredX = medX + (medWidth / 2) - (petWidth / 2);
@@ -550,6 +666,9 @@ function finishEatingMedicine() {
     
     currentMedicineEl = null;
     isEating = false;
+    
+    // Gain experience from eating medicine
+    addExperience(EXPERIENCE_GAIN_EAT);
     
     // Cure the sickness
     cureSickness();
@@ -677,9 +796,8 @@ function moveToNearestMedkit() {
     isWalking = true;
     isHappy = false; // Stop happiness animation if it's playing
     
-    // Aim pet so its center aligns over the medkit center (pet ~120px, medkit ~48px)
-    const petWidth = 120;
-    const petHeight = 120;
+    // Aim pet so its center aligns over the medkit center
+    const { width: petWidth, height: petHeight } = getPetDimensions();
     const medkitWidth = 48;
     const medkitHeight = 48;
     let desiredX = medkitX + (medkitWidth / 2) - (petWidth / 2);
@@ -743,6 +861,9 @@ function finishEatingMedkit() {
     
     currentMedkitEl = null;
     isEating = false;
+    
+    // Gain experience from eating medkit
+    addExperience(EXPERIENCE_GAIN_EAT);
     
     // Increase health by 25
     // setHealth() sends update to main.js, so this persists even when window is minimized/unfocused
@@ -834,9 +955,8 @@ function moveToNearestFood() {
     isWalking = true;
     isHappy = false; // Stop happiness animation if it's playing
     
-    // Aim pet so its center aligns over the food center (pet ~120px, food ~48px)
-    const petWidth = 120;
-    const petHeight = 120;
+    // Aim pet so its center aligns over the food center
+    const { width: petWidth, height: petHeight } = getPetDimensions();
     const foodWidth = 48;
     const foodHeight = 48;
     let desiredX = foodX + (foodWidth / 2) - (petWidth / 2);
@@ -979,6 +1099,9 @@ function initializePet() {
     // Update appearance based on sickness state
     updateSickAppearance();
     
+    // Update pet size based on evolution stage
+    updatePetSize();
+    
     // Load image data for pixel-perfect hit detection
     loadPetImageData();
     
@@ -1101,8 +1224,7 @@ function initializePet() {
         console.log('Container size:', rect.width, rect.height);
         
         // Set initial position to center
-        const petWidth = 120;
-        const petHeight = 120;
+        const { width: petWidth, height: petHeight } = getPetDimensions();
         petX = (rect.width - petWidth) / 2;
         petY = (rect.height - petHeight) / 2;
         
@@ -1145,7 +1267,12 @@ function chooseNewTarget() {
 }
 
 function updateSprite() {
-    if (!pet) return;
+    if (!pet || isEvolving) return; // Don't update sprite during evolution animation
+    
+    const sleepSprite = getSleepSprite();
+    const happinessSprites = getHappinessSprites();
+    const sprites = getWalkSprites();
+    
     // Death takes highest priority - show sleep sprite but no Z's
     if (isDead) {
         if (pet.src !== sleepSprite) {
@@ -1186,8 +1313,8 @@ function updateSprite() {
 
 function updatePosition() {
     if (!pet) return;
-    // Don't move when dead or sleeping
-    if (isDead || isSleeping) return;
+    // Don't move when dead, sleeping, or evolving
+    if (isDead || isSleeping || isEvolving) return;
     
     // Priority order: medicine (if sick) > medkit > food (if not sick)
     // If sick and medicine is present, move to nearest medicine (highest priority)
@@ -1230,8 +1357,7 @@ function updatePosition() {
     if (!container) return;
     
     const rect = container.getBoundingClientRect();
-    const petWidth = 120;
-    const petHeight = 120;
+    const { width: petWidth, height: petHeight } = getPetDimensions();
     
     // Calculate distance to target
     const dx = targetX - petX;
@@ -1266,6 +1392,12 @@ function updatePosition() {
         const currentSpeed = isSick ? walkSpeed * 0.5 : walkSpeed;
         petX += (dx / distance) * currentSpeed;
         petY += (dy / distance) * currentSpeed;
+        
+        // Gain experience from moving (small amount per movement update)
+        // Only give experience every so often to avoid spamming
+        if (Math.random() < 0.05) { // 5% chance per frame
+            addExperience(EXPERIENCE_GAIN_MOVE);
+        }
     }
     
     // Keep within bounds
@@ -1317,6 +1449,7 @@ function checkStateChange(currentTime) {
             console.log('Pet stopped walking');
             // Keep the first sprite when stopped
             if (pet) {
+                const sprites = getWalkSprites();
                 pet.src = sprites[0];
             }
         }
@@ -1415,6 +1548,9 @@ function finishEating() {
     // Increase hunger by 5 and clamp
     setHunger(hunger + 5);
     
+    // Gain experience from eating
+    addExperience(EXPERIENCE_GAIN_EAT);
+    
     // Check if there are more food items available
     if (foodItems.length > 0 && hunger < HUNGER_MAX) {
         // More food available - move to nearest food after happiness animation
@@ -1431,7 +1567,8 @@ function playHappinessAnimation(hasMoreFood = false) {
     if (!pet) return;
     isHappy = true;
     isWalking = false;
-    happinessSpriteIndex = 0; // Start with botamon.png (index 0)
+    happinessSpriteIndex = 0; // Start with first sprite (index 0)
+    const happinessSprites = getHappinessSprites();
     pet.src = happinessSprites[happinessSpriteIndex];
     
     // Each cycle is 1->3->1 (2 sprite switches), so 3 cycles = 6 switches total
@@ -1456,6 +1593,7 @@ function playHappinessAnimation(hasMoreFood = false) {
         // Reset to first walking sprite
         if (pet) {
             currentSpriteIndex = 0;
+            const sprites = getWalkSprites();
             pet.src = sprites[0];
         }
     }, totalDuration);
@@ -1535,6 +1673,7 @@ function triggerDeath() {
     
     // Change to sleep sprite (death sprite)
     if (pet) {
+        const sleepSprite = getSleepSprite();
         pet.src = sleepSprite;
         // Don't show Z's for death
         // Make sure Z's are removed if they exist
@@ -1558,6 +1697,7 @@ function revivePet() {
     // Reset to normal sprite
     if (pet && !isSleeping) {
         currentSpriteIndex = 0;
+        const sprites = getWalkSprites();
         pet.src = sprites[0];
         updateSickAppearance(); // Reapply bubbles if sick
     }
@@ -1732,12 +1872,180 @@ function cureSickness() {
     console.log('Pet has been cured!');
 }
 
+// Add experience and check for evolution
+function addExperience(amount) {
+    if (isDead || isEvolving) return; // Can't gain experience when dead or evolving
+    
+    const oldExperience = experience;
+    experience = Math.min(EXPERIENCE_MAX, experience + amount);
+    
+    // Notify main process to store experience
+    try {
+        ipcRenderer.send('stats:update', { key: 'experience', value: experience, max: EXPERIENCE_MAX });
+    } catch (_) {}
+    
+    // Check if pet should evolve
+    if (experience >= EXPERIENCE_MAX && oldExperience < EXPERIENCE_MAX && !isEvolving) {
+        evolvePet();
+    }
+}
+
+// Start passive experience gain (experience just for existing)
+function startPassiveExperienceGain() {
+    if (experienceTimeIntervalId) {
+        clearInterval(experienceTimeIntervalId);
+    }
+    
+    // Gain 10 experience every 3 minutes (180000ms)
+    experienceTimeIntervalId = setInterval(() => {
+        if (!isDead && !isEvolving) {
+            addExperience(EXPERIENCE_GAIN_TIME_AMOUNT);
+        }
+    }, EXPERIENCE_GAIN_TIME_INTERVAL);
+}
+
+// Stop passive experience gain
+function stopPassiveExperienceGain() {
+    if (experienceTimeIntervalId) {
+        clearInterval(experienceTimeIntervalId);
+        experienceTimeIntervalId = null;
+    }
+}
+
+// Evolve pet to next stage with animation
+function evolvePet() {
+    if (isDead || isEvolving) return; // Can't evolve when dead or already evolving
+    
+    // Check if there's a next stage available
+    const nextStage = currentEvolutionStage + 1;
+    const nextStageKey = `stage${nextStage}`;
+    
+    if (!petSprites[nextStageKey]) {
+        console.log(`No stage ${nextStage} sprites available. Pet is at max evolution!`);
+        return; // Already at max evolution
+    }
+    
+    // Start evolution animation
+    isEvolving = true;
+    
+    // Step 1: Make pet sprite white
+    if (pet) {
+        pet.style.filter = 'brightness(10) saturate(0)'; // Make sprite white
+    }
+    
+    // Step 2: Create white overlay that covers the whole screen
+    // Get the pet window container to ensure overlay covers entire window
+    const petWindowContainer = document.querySelector('.pet-window') || document.body;
+    const overlay = document.createElement('div');
+    overlay.id = 'evolution-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background: white;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        pointer-events: none;
+        margin: 0;
+        padding: 0;
+    `;
+    document.body.appendChild(overlay);
+    
+    // Stop all animations and movements during evolution
+    const wasWalking = isWalking;
+    const wasHappy = isHappy;
+    isWalking = false;
+    isHappy = false;
+    
+    // Fade in white overlay
+    setTimeout(() => {
+        overlay.style.opacity = '1';
+    }, 10);
+    
+    // Step 3: After overlay is visible, change sprites during the 3 seconds
+    setTimeout(() => {
+        // Evolve to next stage
+        currentEvolutionStage = nextStage;
+        console.log(`Pet evolved to stage ${nextStage}!`);
+        
+        // Reset experience to 0
+        experience = 0;
+        try {
+            ipcRenderer.send('stats:update', { key: 'experience', value: 0, max: EXPERIENCE_MAX });
+        } catch (_) {}
+        
+        // Reload all sprites to use new evolution stage sprites
+        const sprites = getWalkSprites();
+        const sleepSprite = getSleepSprite();
+        
+        // Update current sprite based on state
+        if (isSleeping || isDead) {
+            pet.src = sleepSprite;
+        } else if (isHappy) {
+            const happinessSprites = getHappinessSprites();
+            pet.src = happinessSprites[happinessSpriteIndex];
+        } else {
+            pet.src = sprites[currentSpriteIndex];
+        }
+        
+        // Remove white filter from pet
+        if (pet) {
+            pet.style.filter = 'none';
+        }
+        
+        // Reload image data for new sprite
+        reloadPetImageData();
+        
+        // Update pet size based on new evolution stage
+        updatePetSize();
+        
+        // Notify main process of evolution
+        try {
+            ipcRenderer.send('pet:evolved', currentEvolutionStage);
+        } catch (_) {}
+    }, 500); // Wait 0.5s before changing sprites (halfway through animation)
+    
+    // Step 4: After 3 seconds, fade out white overlay and remove it
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+            isEvolving = false;
+            
+            // Resume normal behavior after evolution
+            if (!isDead && !isSleeping) {
+                // Restore previous state if needed, or start walking
+                if (!wasHappy && !wasWalking) {
+                    isWalking = true;
+                    scheduleNextStateChange();
+                    chooseNewTarget();
+                } else if (wasWalking) {
+                    isWalking = true;
+                    scheduleNextStateChange();
+                    chooseNewTarget();
+                }
+            }
+        }, 500); // Wait for fade out to complete
+    }, 3000); // Total 3 seconds
+}
+
 // Handle pet click for petting
 function handlePetClick() {
     if (isDead || isSleeping) return; // Can't pet when dead or sleeping
     
     // Increment click count
     petClickCount++;
+    
+    // Gain experience from petting
+    addExperience(EXPERIENCE_GAIN_PET);
     
     // Play happiness animation (if not already playing and not eating)
     if (!isHappy && !isEating) {
@@ -1863,6 +2171,7 @@ function startSleeping() {
     isEating = false;
     
     // Change sprite to sleep sprite
+    const sleepSprite = getSleepSprite();
     pet.src = sleepSprite;
     updateSickAppearance(); // Update bubbles if sick
     
@@ -1892,6 +2201,7 @@ function stopSleeping() {
     // Rest increment is now handled in main.js for persistence
     // Reset to normal sprite
     currentSpriteIndex = 0;
+    const sprites = getWalkSprites();
     pet.src = sprites[0];
     updateSickAppearance(); // Update bubbles if sick
     

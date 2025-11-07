@@ -14,8 +14,12 @@ let storedStats = {
   health: { value: 50, max: 100 },
   rest: { value: 50, max: 100 },
   hunger: { value: 50, max: 100 },
-  happiness: { value: 50, max: 100 }
+  happiness: { value: 50, max: 100 },
+  experience: { value: 0, max: 100 } // Hidden stat - not shown in stats window
 };
+
+// Evolution system
+let currentEvolutionStage = 1; // Start at stage 1
 
 // Money system
 let money = 100; // Starting money
@@ -125,6 +129,8 @@ function createPetWindow() {
         max: stat.max
       });
     });
+    // Send evolution stage to pet window
+    petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
   });
 
   // Build custom menu with Actions, Shop, and Stats
@@ -343,8 +349,8 @@ ipcMain.on('stats:update', (_event, payload) => {
     storedStats[key] = { value: value, max: max };
   }
   
-  // Forward to stats window if it's open
-  if (statsWindow && !statsWindow.isDestroyed()) {
+  // Forward to stats window if it's open (but NOT experience, which is hidden)
+  if (statsWindow && !statsWindow.isDestroyed() && key !== 'experience') {
     statsWindow.webContents.send('stats:update', payload);
   }
 });
@@ -391,6 +397,19 @@ ipcMain.on('pet:sick', (_event, sick) => {
 // Handle pet death state changes
 ipcMain.on('pet:death', (_event, dead) => {
   isPetDead = dead;
+});
+
+// Handle pet evolution
+ipcMain.on('pet:evolved', (_event, stage) => {
+  currentEvolutionStage = stage;
+  console.log(`Pet evolved to stage ${stage}!`);
+});
+
+// Handle evolution stage request from renderer
+ipcMain.on('pet:requestEvolutionStage', (event) => {
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+  }
 });
 
 // Handle waste count updates from renderer
