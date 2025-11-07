@@ -237,3 +237,25 @@ html, body {
     background: linear-gradient(90deg, #3ecf8e, #73e3ad);
 }
 
+/* Money display - bottom left corner */
+.money-display {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    color: #ffd700;
+    font-size: 18px;
+    font-weight: 700;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    -webkit-text-stroke: 1px #000000;
+    text-stroke: 1px #000000;
+    text-shadow: 
+        -0.5px -0.5px 0 #000,
+        0.5px -0.5px 0 #000,
+        -0.5px 0.5px 0 #000,
+        0.5px 0.5px 0 #000,
+        0 0 2px rgba(0, 0, 0, 0.8);
+    z-index: 200;
+    pointer-events: none;
+    user-select: none;
+}
+

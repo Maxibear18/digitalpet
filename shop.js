@@ -1,5 +1,7 @@
 const { ipcRenderer } = require('electron');
 
+let currentMoney = 100; // Will be updated from main process
+
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
     const panels = Array.from(document.querySelectorAll('.shop-panel'));
@@ -22,10 +24,47 @@ window.addEventListener('DOMContentLoaded', () => {
         tab.addEventListener('click', () => setActive(tab.dataset.tab));
     });
 
+    // Listen for money updates
+    ipcRenderer.on('money:update', (_event, amount) => {
+        currentMoney = amount;
+        updateBuyButtons();
+    });
+
+    // Listen for purchase failures
+    ipcRenderer.on('shop:purchaseFailed', (_event, data) => {
+        if (data.reason === 'insufficient_funds') {
+            alert(`Not enough money! You need $${data.cost} but only have $${data.current}.`);
+        }
+    });
+
+    // Update buy button states based on money
+    function updateBuyButtons() {
+        buyButtons.forEach(btn => {
+            const cost = parseInt(btn.dataset.cost) || 0;
+            if (currentMoney < cost) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        });
+    }
+
     buyButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const item = btn.dataset.item;
-            // For now map item keys to image paths
+            const cost = parseInt(btn.dataset.cost) || 0;
+            
+            // Check if player has enough money (client-side check)
+            if (currentMoney < cost) {
+                alert(`Not enough money! You need $${cost} but only have $${currentMoney}.`);
+                return;
+            }
+            
+            // Send purchase request to main process
             if (item === 'food1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'food',
@@ -46,6 +85,30 @@ window.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
+    });
+
+    // Initial update
+    updateBuyButtons();
+    
+    // Request current money from main process
+    ipcRenderer.send('money:request');
+});
+
+// Listen for money request response
+ipcRenderer.on('money:response', (_event, amount) => {
+    currentMoney = amount;
+    const buyButtons = Array.from(document.querySelectorAll('.buy-btn'));
+    buyButtons.forEach(btn => {
+        const cost = parseInt(btn.dataset.cost) || 0;
+        if (currentMoney < cost) {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+        } else {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        }
     });
 });
 

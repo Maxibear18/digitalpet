@@ -16,6 +16,19 @@ let storedStats = {
   happiness: { value: 50, max: 100 }
 };
 
+// Money system
+let money = 100; // Starting money
+const MONEY_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
+const MONEY_INCREMENT_AMOUNT = 50; // Amount money increases by
+let moneyIncrementIntervalId = null;
+
+// Item costs
+const ITEM_COSTS = {
+  food1: 15,
+  medicine1: 35,
+  medkit1: 50
+};
+
 // Hunger decay system - runs in main process so it persists even when windows are closed
 const HUNGER_DECAY_INTERVAL = 150000; // 2.5 minutes in milliseconds
 const HUNGER_DECAY_AMOUNT = 10; // Amount hunger decreases by
@@ -115,7 +128,15 @@ function createPetWindow() {
   startRestDecay();
   startHealthDecay(); // Start health decay (will only run if pet is sick)
   startSicknessCheck(); // Start sickness check system
+  startMoneyIncrement(); // Start money increment system
   // Rest increment is started/stopped when pet sleeps/wakes
+  
+  // Send initial money to pet window
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.once('did-finish-load', () => {
+      petWindow.webContents.send('money:update', money);
+    });
+  }
 }
 
 // Build menu with dynamic Sleep/Wake Up button
@@ -178,6 +199,12 @@ function openShopWindow() {
     shopWindow.setMenuBarVisibility(false);
   }
   shopWindow.loadFile('shop.html');
+  
+  // Send initial money to shop window when it's ready
+  shopWindow.webContents.once('did-finish-load', () => {
+    shopWindow.webContents.send('money:update', money);
+  });
+  
   shopWindow.on('closed', () => {
     shopWindow = null;
   });
@@ -245,12 +272,50 @@ app.on('activate', () => {
   }
 });
 
-// Forward shop purchases to the pet window
+// Handle shop purchases - check money and deduct cost
 ipcMain.on('shop:buy', (_event, payload) => {
+  if (!payload || !payload.id) return;
+  
+  const itemId = payload.id;
+  const cost = ITEM_COSTS[itemId];
+  
+  // Check if cost exists and player has enough money
+  if (cost === undefined) {
+    console.error('Unknown item:', itemId);
+    return;
+  }
+  
+  if (money < cost) {
+    // Not enough money - notify shop window
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('shop:purchaseFailed', { reason: 'insufficient_funds', cost: cost, current: money });
+    }
+    return;
+  }
+  
+  // Deduct money
+  money -= cost;
+  
+  // Send money update to all windows
+  sendMoneyUpdate();
+  
+  // Forward purchase to pet window to spawn item
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.webContents.send('shop:spawnItem', payload);
   }
+  
+  console.log(`Purchased ${itemId} for $${cost}. Remaining money: $${money}`);
 });
+
+// Send money update to all windows
+function sendMoneyUpdate() {
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.send('money:update', money);
+  }
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('money:update', money);
+  }
+}
 
 // Forward stat updates from pet to stats window
 // Also store stats so they persist even when window is closed
@@ -317,6 +382,11 @@ ipcMain.on('pet:sick', (_event, sick) => {
 // Handle waste count updates from renderer
 ipcMain.on('waste:updateCount', (_event, count) => {
   wasteCount = count;
+});
+
+// Handle money request from any window
+ipcMain.on('money:request', (event) => {
+  event.reply('money:response', money);
 });
 
 // Handle request for stored stats (so pet window can load them on startup)
@@ -705,6 +775,29 @@ function stopSicknessCheck() {
   if (sicknessCheckIntervalId) {
     clearInterval(sicknessCheckIntervalId);
     sicknessCheckIntervalId = null;
+  }
+}
+
+// Start money increment system - runs continuously in main process
+function startMoneyIncrement() {
+  // Clear any existing interval
+  if (moneyIncrementIntervalId) {
+    clearInterval(moneyIncrementIntervalId);
+  }
+  
+  // Set up interval to increase money every minute
+  moneyIncrementIntervalId = setInterval(() => {
+    money += MONEY_INCREMENT_AMOUNT;
+    sendMoneyUpdate();
+    console.log(`Money increased by $${MONEY_INCREMENT_AMOUNT}. Total: $${money}`);
+  }, MONEY_INCREMENT_INTERVAL);
+}
+
+// Stop money increment system
+function stopMoneyIncrement() {
+  if (moneyIncrementIntervalId) {
+    clearInterval(moneyIncrementIntervalId);
+    moneyIncrementIntervalId = null;
   }
 }
 

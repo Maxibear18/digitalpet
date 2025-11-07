@@ -103,6 +103,14 @@ function updateStatBar(key, value, max) {
     valueDisplay.textContent = `${value} / ${max}`;
 }
 
+// Function to update money display
+function updateMoneyDisplay(amount) {
+    const moneyDisplay = document.getElementById('money-display');
+    if (moneyDisplay) {
+        moneyDisplay.textContent = `$${amount}`;
+    }
+}
+
 // Initialize everything
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing pet...');
@@ -239,6 +247,21 @@ window.addEventListener('load', () => {
             updateSickAppearance();
             console.log('Pet became healthy!');
         }
+    });
+    
+    // Listen for money updates from main process
+    ipcRenderer.on('money:update', (_event, amount) => {
+        updateMoneyDisplay(amount);
+    });
+    
+    // Request initial money from main process
+    try {
+        ipcRenderer.send('money:request');
+    } catch (_) {}
+    
+    // Listen for money request response
+    ipcRenderer.on('money:response', (_event, amount) => {
+        updateMoneyDisplay(amount);
     });
     
     // Listen for stat updates from main process (e.g., hunger decay)
