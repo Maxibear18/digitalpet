@@ -38,6 +38,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'medicine1',
                     imagePath: 'sprites/pill.png'
                 });
+            } else if (item === 'medkit1') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'medkit',
+                    id: 'medkit1',
+                    imagePath: 'sprites/medkit.png'
+                });
             }
         });
     });

@@ -44,6 +44,12 @@ const REST_INCREMENT_INTERVAL = 45000; // 45 seconds in milliseconds
 const REST_INCREMENT_AMOUNT = 5; // Amount rest increases by while sleeping
 let restIncrementIntervalId = null;
 
+// Health increment system - runs in main process so it persists even when windows are closed
+// Only increments when pet IS sleeping
+const HEALTH_INCREMENT_INTERVAL = 240000; // 4 minutes in milliseconds
+const HEALTH_INCREMENT_AMOUNT = 5; // Amount health increases by while sleeping
+let healthIncrementIntervalId = null;
+
 // Health decay system - runs in main process so it persists even when windows are closed
 // Only decays when pet IS sick
 const HEALTH_DECAY_INTERVAL = 90000; // 1.5 minutes in milliseconds
@@ -275,12 +281,14 @@ ipcMain.on('pet:sleeping', (_event, sleeping) => {
   buildMenu(); // Rebuild menu with updated Sleep/Wake Up button
   
   if (sleeping) {
-    // Pet is sleeping - stop decay and start increment
+    // Pet is sleeping - stop decay and start increments
     stopRestDecay();
     startRestIncrement();
+    startHealthIncrement();
   } else {
-    // Pet is awake - stop increment and start decay
+    // Pet is awake - stop increments and start decay
     stopRestIncrement();
+    stopHealthIncrement();
     startRestDecay();
   }
 });
@@ -536,6 +544,66 @@ function stopRestIncrement() {
   if (restIncrementIntervalId) {
     clearInterval(restIncrementIntervalId);
     restIncrementIntervalId = null;
+  }
+}
+
+// Start health increment system - runs continuously in main process
+// Only increments when pet IS sleeping
+function startHealthIncrement() {
+  // Clear any existing interval
+  if (healthIncrementIntervalId) {
+    clearInterval(healthIncrementIntervalId);
+  }
+  
+  // Don't start increment if pet is not sleeping
+  if (!isPetSleeping) {
+    return;
+  }
+  
+  // Set up interval to increase health every 4 minutes (only when sleeping)
+  healthIncrementIntervalId = setInterval(() => {
+    // Don't increment if pet is not sleeping
+    if (!isPetSleeping) {
+      stopHealthIncrement();
+      return;
+    }
+    
+    if (!storedStats.health) {
+      storedStats.health = { value: 50, max: HEALTH_MAX };
+    }
+    
+    // Increase health by the increment amount (cap at max)
+    const currentHealth = storedStats.health.value;
+    const newHealth = Math.min(HEALTH_MAX, currentHealth + HEALTH_INCREMENT_AMOUNT);
+    
+    // Update stored stat
+    storedStats.health.value = newHealth;
+    
+    // Send update to pet window if it's open
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'health',
+        value: newHealth,
+        max: HEALTH_MAX
+      });
+    }
+  }, HEALTH_INCREMENT_INTERVAL);
+}
+
+// Stop health increment system
+function stopHealthIncrement() {
+  if (healthIncrementIntervalId) {
+    clearInterval(healthIncrementIntervalId);
+    healthIncrementIntervalId = null;
   }
 }
 

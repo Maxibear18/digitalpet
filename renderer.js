@@ -44,6 +44,10 @@ let currentMedicineEl = null; // Currently targeted medicine item
 let sicknessBubbles = []; // Array of sickness bubble elements
 let bubbleSpawnIntervalId = null; // Interval ID for spawning bubbles
 
+// Medkit items
+let medkitItems = []; // Array of all medkit items on screen
+let currentMedkitEl = null; // Currently targeted medkit item
+
 // Petting mechanic
 let petClickCount = 0; // Track number of clicks for petting
 const PETS_FOR_HAPPINESS = 10; // Number of pets needed to increase happiness
@@ -193,9 +197,11 @@ window.addEventListener('load', () => {
     // Handle spawning items from the Shop
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;
-        // Check if it's medicine or food
+        // Check item type
         if (payload.type === 'medicine') {
             spawnMedicineAndGoToIt(payload.imagePath);
+        } else if (payload.type === 'medkit') {
+            spawnMedkitAndGoToIt(payload.imagePath);
         } else {
             spawnFoodAndGoToIt(payload.imagePath);
         }
@@ -497,6 +503,194 @@ function finishEatingMedicine() {
     playHappinessAnimation(false);
 }
 
+// Spawn medkit and make pet go to it (can be used anytime, not just when sick)
+function spawnMedkitAndGoToIt(imagePath) {
+    if (!pet) return;
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+
+    const item = document.createElement('img');
+    item.src = imagePath;
+    item.alt = 'Medkit';
+    item.className = 'medkit-item'; // Add class to identify medkit items
+    item.style.position = 'absolute';
+    item.style.imageRendering = 'pixelated';
+    item.style.pointerEvents = 'auto'; // Make clickable
+    item.style.cursor = 'pointer'; // Show pointer cursor
+    item.style.zIndex = '95'; // Higher than food so it's more visible
+    item.style.width = '48px';
+    item.style.height = 'auto';
+
+    // Spawn at a random location within container
+    const rect = container.getBoundingClientRect();
+    const spawnX = Math.max(0, Math.min(rect.width - 48, Math.random() * (rect.width - 48)));
+    const spawnY = Math.max(0, Math.min(rect.height - 48, Math.random() * (rect.height - 48)));
+    item.style.left = spawnX + 'px';
+    item.style.top = spawnY + 'px';
+
+    // Add click event to remove medkit
+    item.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to pet
+        removeMedkitItem(item);
+    });
+
+    container.appendChild(item);
+    
+    // Add to medkit items array
+    medkitItems.push(item);
+
+    // Move pet to nearest medkit (can be used anytime)
+    moveToNearestMedkit();
+}
+
+// Remove a medkit item when clicked by user
+function removeMedkitItem(medkitItem) {
+    if (!medkitItem || !medkitItem.parentNode) return;
+    
+    // Remove from DOM
+    medkitItem.parentNode.removeChild(medkitItem);
+    
+    // Remove from medkit items array
+    medkitItems = medkitItems.filter(medkit => medkit !== medkitItem);
+    
+    // If this was the current target, clear it and find nearest medkit if available
+    if (currentMedkitEl === medkitItem) {
+        currentMedkitEl = null;
+        if (medkitItems.length > 0) {
+            moveToNearestMedkit();
+        }
+    }
+}
+
+// Find all medkit items on screen and return the nearest one to the pet
+function findNearestMedkit() {
+    if (!pet || medkitItems.length === 0) return null;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return null;
+    
+    let nearestMedkit = null;
+    let minDistance = Infinity;
+    
+    // Filter out any medkit items that have been removed from DOM
+    medkitItems = medkitItems.filter(medkit => {
+        if (!medkit.parentNode) return false; // Item was removed
+        return true;
+    });
+    
+    if (medkitItems.length === 0) return null;
+    
+    // Find nearest medkit item
+    medkitItems.forEach(medkit => {
+        const medkitX = parseFloat(medkit.style.left);
+        const medkitY = parseFloat(medkit.style.top);
+        
+        // Calculate distance from pet to medkit
+        const dx = medkitX - petX;
+        const dy = medkitY - petY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestMedkit = medkit;
+        }
+    });
+    
+    return nearestMedkit;
+}
+
+// Move pet to the nearest medkit item (can be used anytime)
+function moveToNearestMedkit() {
+    if (!pet) return;
+    
+    const nearestMedkit = findNearestMedkit();
+    if (!nearestMedkit) return;
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    currentMedkitEl = nearestMedkit;
+    
+    // Get medkit position
+    const medkitX = parseFloat(nearestMedkit.style.left);
+    const medkitY = parseFloat(nearestMedkit.style.top);
+    
+    isEating = false;
+    
+    // Interrupt any current behavior and immediately walk toward the medkit
+    isWalking = true;
+    isHappy = false; // Stop happiness animation if it's playing
+    
+    // Aim pet so its center aligns over the medkit center (pet ~120px, medkit ~48px)
+    const petWidth = 120;
+    const petHeight = 120;
+    const medkitWidth = 48;
+    const medkitHeight = 48;
+    let desiredX = medkitX + (medkitWidth / 2) - (petWidth / 2);
+    let desiredY = medkitY + (medkitHeight / 2) - (petHeight / 2);
+    // Nudge slightly toward the medkit so the pet overlaps it more
+    desiredX -= 8;
+    desiredY -= 6;
+    targetX = Math.max(0, Math.min(desiredX, rect.width - petWidth));
+    targetY = Math.max(0, Math.min(desiredY, rect.height - petHeight));
+}
+
+// Begin eating medkit
+function beginEatingMedkit() {
+    // Verify medkit still exists and is in the medkit items array
+    if (!currentMedkitEl || !currentMedkitEl.parentNode || isEating) {
+        // Medkit was removed or invalid, find nearest medkit if available
+        if (medkitItems.length > 0) {
+            moveToNearestMedkit();
+        }
+        return;
+    }
+    
+    // Verify this medkit is still in our medkit items array
+    if (!medkitItems.includes(currentMedkitEl)) {
+        // Medkit was removed from array but element still exists, find nearest
+        if (medkitItems.length > 0) {
+            moveToNearestMedkit();
+        }
+        return;
+    }
+    
+    // Arrived at medkit: stop moving and eat
+    isWalking = false;
+    isEating = true;
+    
+    if (eatingTimeoutId) {
+        clearTimeout(eatingTimeoutId);
+        eatingTimeoutId = null;
+    }
+    
+    eatingTimeoutId = setTimeout(() => {
+        finishEatingMedkit();
+    }, 5000); // 5 seconds
+}
+
+// Finish eating medkit and restore health
+function finishEatingMedkit() {
+    // Remove the medkit element that was just eaten
+    if (currentMedkitEl && currentMedkitEl.parentNode) {
+        currentMedkitEl.parentNode.removeChild(currentMedkitEl);
+    }
+    
+    // Remove from medkit items array
+    medkitItems = medkitItems.filter(medkit => medkit !== currentMedkitEl);
+    
+    currentMedkitEl = null;
+    isEating = false;
+    
+    // Increase health by 25
+    // setHealth() sends update to main.js, so this persists even when window is minimized/unfocused
+    setHealth(health + 25);
+    
+    // Play happiness animation
+    playHappinessAnimation(false);
+}
+
 // Remove a food item when clicked by user
 function removeFoodItem(foodItem) {
     if (!foodItem || !foodItem.parentNode) return;
@@ -780,7 +974,20 @@ function initializePet() {
             }
         }
         
-        // Check all waste items if no food or medicine was clicked
+        // Check all medkit items if no food or medicine was clicked
+        if (!clickedItem) {
+            for (let medkit of medkitItems) {
+                if (!medkit.parentNode) continue; // Skip removed items
+                const medkitRect = medkit.getBoundingClientRect();
+                if (e.clientX >= medkitRect.left && e.clientX <= medkitRect.right &&
+                    e.clientY >= medkitRect.top && e.clientY <= medkitRect.bottom) {
+                    clickedItem = medkit;
+                    break;
+                }
+            }
+        }
+        
+        // Check all waste items if no food, medicine, or medkit was clicked
         if (!clickedItem) {
             for (let waste of wasteItems) {
                 if (!waste.parentNode) continue; // Skip removed items
@@ -815,7 +1022,7 @@ function initializePet() {
         // Only trigger petting if:
         // 1. It wasn't a drag
         // 2. Pet is not sleeping
-        // 3. Click didn't hit food/medicine/waste
+        // 3. Click didn't hit food/medicine/medkit/waste
         // 4. Click hit an actual opaque pixel in the pet sprite
         if (!hasMoved && !isSleeping && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
@@ -913,7 +1120,8 @@ function updatePosition() {
     // Don't move when sleeping
     if (isSleeping) return;
     
-    // If sick and medicine is present, move to nearest medicine (priority over food)
+    // Priority order: medicine (if sick) > medkit > food (if not sick)
+    // If sick and medicine is present, move to nearest medicine (highest priority)
     if (isSick && medicineItems.length > 0 && !isEating) {
         // Check if we have a valid current medicine target
         if (!currentMedicineEl || !currentMedicineEl.parentNode) {
@@ -921,6 +1129,17 @@ function updatePosition() {
             moveToNearestMedicine();
         }
         if (currentMedicineEl) {
+            isWalking = true;
+        }
+    }
+    // If medkit is present, move to nearest medkit (second priority)
+    else if (medkitItems.length > 0 && !isEating) {
+        // Check if we have a valid current medkit target
+        if (!currentMedkitEl || !currentMedkitEl.parentNode) {
+            // Current medkit was removed or invalid, find nearest
+            moveToNearestMedkit();
+        }
+        if (currentMedkitEl) {
             isWalking = true;
         }
     }
@@ -955,6 +1174,11 @@ function updatePosition() {
         // If target is medicine, start eating medicine
         if (currentMedicineEl) {
             beginEatingMedicine();
+            return;
+        }
+        // If target is medkit, start eating medkit
+        if (currentMedkitEl) {
+            beginEatingMedkit();
             return;
         }
         // If target is food, start eating
@@ -1006,10 +1230,11 @@ function scheduleNextStateChange() {
 
 // Check and handle state changes
 function checkStateChange(currentTime) {
-    // Disable random state changes while eating, sleeping, during happiness animation, when food is present, or when medicine is present
+    // Disable random state changes while eating, sleeping, during happiness animation, when food is present, when medicine is present, or when medkit is present
     if (isEating || isSleeping || isHappy || 
         (foodItems.length > 0 && hunger < HUNGER_MAX && !isSick) || 
-        (medicineItems.length > 0 && isSick)) return;
+        (medicineItems.length > 0 && isSick) ||
+        (medkitItems.length > 0)) return;
     if (currentTime >= nextStateChangeTime) {
         isWalking = !isWalking;
         scheduleNextStateChange();
@@ -1202,6 +1427,7 @@ function setHealth(value) {
     // Update stat bar directly
     updateStatBar('health', health, HEALTH_MAX);
     // Notify main to store the update
+    // This ensures health persists even when window is minimized/unfocused
     try {
         ipcRenderer.send('stats:update', { key: 'health', value: health, max: HEALTH_MAX });
     } catch (_) {}
@@ -1524,9 +1750,11 @@ function stopSleeping() {
     updateSickAppearance(); // Update bubbles if sick
     
     // Resume normal behavior
-    // If sick and medicine is available, go to medicine, otherwise resume normal walking
+    // Priority: medicine (if sick) > medkit > normal walking
     if (isSick && medicineItems.length > 0) {
         moveToNearestMedicine();
+    } else if (medkitItems.length > 0) {
+        moveToNearestMedkit();
     } else {
         isWalking = true;
         scheduleNextStateChange();
