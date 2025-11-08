@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Name Your Pet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background: #f0f5ef;
+            color: #243020;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .name-dialog-header {
+            background: linear-gradient(180deg, #89d47d, #5fb95a);
+            color: #0f280c;
+            padding: 10px 14px;
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+        }
+
+        .name-dialog-title {
+            font-weight: 700;
+            font-size: 16px;
+            letter-spacing: 0.4px;
+        }
+
+        .name-dialog-content {
+            flex: 1;
+            padding: 14px;
+            background: #f7fbf6;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .name-dialog-message {
+            color: #243020;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 8px;
+            background: #ffffff;
+            color: #243020;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.06);
+        }
+
+        input[type="text"]:focus {
+            border-color: #5fb95a;
+            box-shadow: 0 0 0 3px rgba(95, 185, 90, 0.1);
+        }
+
+        input[type="text"]::placeholder {
+            color: #8a9a85;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            font-size: 12px;
+            min-height: 16px;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        button {
+            appearance: none;
+            border: 0;
+            padding: 10px 16px;
+            background: #5fb95a;
+            color: #0e240b;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            flex: 1;
+        }
+
+        button:hover {
+            background: #54ab50;
+        }
+
+        button:active {
+            background: #4a9a47;
+        }
+    </style>
+</head>
+<body>
+    <header class="name-dialog-header">
+        <div class="name-dialog-title">Name Your Pet</div>
+    </header>
+    <main class="name-dialog-content">
+        <div class="name-dialog-message">Your pet has hatched! What would you like to name it?</div>
+        <div class="input-container">
+            <input type="text" id="pet-name-input" placeholder="Enter pet name..." maxlength="20" autofocus>
+            <div class="error-message" id="error-message"></div>
+        </div>
+        <div class="button-container">
+            <button id="submit-button">Confirm</button>
+        </div>
+    </main>
+    <script src="name-dialog.js"></script>
+</body>
+</html>

@@ -4,6 +4,8 @@ const path = require('path');
 let petWindow;
 let shopWindow;
 let statsWindow;
+let nameDialogWindow = null; // Name dialog window
+let petName = 'Digital Pet'; // Default pet name
 let isPetSleeping = false; // Track pet sleep state for menu updates
 let isPetExercising = false; // Track pet exercise state for menu updates
 let isPetSick = false; // Track pet sickness state (starts healthy)
@@ -104,7 +106,7 @@ function createPetWindow() {
     resizable: true, // Allow resizing
     minWidth: 200,
     minHeight: 200,
-    title: 'Digital Pet',
+    title: petName,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -350,7 +352,76 @@ ipcMain.on('shop:buy', (_event, payload) => {
 ipcMain.on('egg:hatched', () => {
   isEggHatched = true;
   console.log('Egg has hatched! Stats decay will now start.');
+  // Open name dialog window
+  openNameDialog();
 });
+
+// Handle pet name submission
+ipcMain.on('pet:nameSubmitted', (_event, name) => {
+  petName = name;
+  console.log(`Pet named: ${petName}`);
+  
+  // Update pet window title
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.setTitle(petName);
+  }
+  
+  // Close name dialog if it's still open
+  if (nameDialogWindow && !nameDialogWindow.isDestroyed()) {
+    nameDialogWindow.close();
+  }
+});
+
+// Open name dialog window
+function openNameDialog() {
+  // Don't open if dialog is already open
+  if (nameDialogWindow && !nameDialogWindow.isDestroyed()) {
+    nameDialogWindow.focus();
+    return;
+  }
+
+  nameDialogWindow = new BrowserWindow({
+    width: 340,
+    height: 180,
+    resizable: false,
+    modal: petWindow && !petWindow.isDestroyed(), // Only modal if pet window exists
+    alwaysOnTop: true,
+    frame: true,
+    title: 'Name Your Pet',
+    autoHideMenuBar: true,
+    parent: (petWindow && !petWindow.isDestroyed()) ? petWindow : undefined, // Make it a modal of the pet window if available
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  nameDialogWindow.loadFile('name-dialog.html');
+
+  // Center the dialog on the screen
+  const { screen } = require('electron');
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.workAreaSize;
+  nameDialogWindow.setPosition(
+    Math.floor((width - 340) / 2),
+    Math.floor((height - 180) / 2)
+  );
+
+  // Handle window close
+  nameDialogWindow.on('closed', () => {
+    nameDialogWindow = null;
+  });
+
+  // Prevent closing without entering a name (optional - you can remove this if you want)
+  nameDialogWindow.on('close', (event) => {
+    // Allow closing if pet already has a custom name
+    if (petName !== 'Digital Pet') {
+      return;
+    }
+    // Otherwise, prevent closing and show message
+    // For now, we'll allow closing - user can set name later if needed
+  });
+}
 
 // Send money update to all windows
 function sendMoneyUpdate() {
