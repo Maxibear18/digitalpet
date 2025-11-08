@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 
 let currentMoney = 300; // Will be updated from main process
+let hasPet = false; // Track if pet exists (egg hatched)
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -28,19 +29,38 @@ window.addEventListener('DOMContentLoaded', () => {
     ipcRenderer.on('money:update', (_event, amount) => {
         currentMoney = amount;
         updateBuyButtons();
+        updateEggButton(); // Also update egg button specifically
     });
 
     // Listen for purchase failures
     ipcRenderer.on('shop:purchaseFailed', (_event, data) => {
         if (data.reason === 'insufficient_funds') {
             alert(`Not enough money! You need $${data.cost} but only have $${data.current}.`);
+        } else if (data.reason === 'pet_exists') {
+            alert('You already have a pet! You cannot buy another egg.');
         }
+    });
+    
+    // Listen for pet state updates (to enable/disable egg button)
+    ipcRenderer.on('pet:stateUpdate', (_event, data) => {
+        hasPet = data.isEggHatched || false;
+        updateEggButton();
     });
 
     // Update buy button states based on money
     function updateBuyButtons() {
         buyButtons.forEach(btn => {
             const cost = parseInt(btn.dataset.cost) || 0;
+            const item = btn.dataset.item;
+            
+            // Disable egg button if pet already exists
+            if (item === 'egg1' && hasPet) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                return;
+            }
+            
             if (currentMoney < cost) {
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
@@ -51,6 +71,29 @@ window.addEventListener('DOMContentLoaded', () => {
                 btn.style.cursor = 'pointer';
             }
         });
+    }
+    
+    // Update egg button specifically
+    function updateEggButton() {
+        const eggButton = buyButtons.find(btn => btn.dataset.item === 'egg1');
+        if (eggButton) {
+            if (hasPet) {
+                eggButton.disabled = true;
+                eggButton.style.opacity = '0.5';
+                eggButton.style.cursor = 'not-allowed';
+            } else {
+                const cost = parseInt(eggButton.dataset.cost) || 0;
+                if (currentMoney < cost) {
+                    eggButton.disabled = true;
+                    eggButton.style.opacity = '0.5';
+                    eggButton.style.cursor = 'not-allowed';
+                } else {
+                    eggButton.disabled = false;
+                    eggButton.style.opacity = '1';
+                    eggButton.style.cursor = 'pointer';
+                }
+            }
+        }
     }
 
     buyButtons.forEach(btn => {
@@ -84,6 +127,11 @@ window.addEventListener('DOMContentLoaded', () => {
                     imagePath: 'sprites/medkit.png'
                 });
             } else if (item === 'egg1') {
+                // Check if pet already exists
+                if (hasPet) {
+                    alert('You already have a pet! You cannot buy another egg.');
+                    return;
+                }
                 ipcRenderer.send('shop:buy', {
                     type: 'egg',
                     id: 'egg1',
@@ -103,19 +151,8 @@ window.addEventListener('DOMContentLoaded', () => {
 // Listen for money request response
 ipcRenderer.on('money:response', (_event, amount) => {
     currentMoney = amount;
-    const buyButtons = Array.from(document.querySelectorAll('.buy-btn'));
-    buyButtons.forEach(btn => {
-        const cost = parseInt(btn.dataset.cost) || 0;
-        if (currentMoney < cost) {
-            btn.disabled = true;
-            btn.style.opacity = '0.5';
-            btn.style.cursor = 'not-allowed';
-        } else {
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            btn.style.cursor = 'pointer';
-        }
-    });
+    updateBuyButtons();
+    updateEggButton();
 });
 
 

@@ -24,6 +24,7 @@ let storedStats = {
 
 // Evolution system
 let currentEvolutionStage = 1; // Start at stage 1
+let currentPetType = 'botamon'; // Current pet type (botamon, poyomon, punimon, pitchmon)
 
 // Money system
 let money = 300; // Starting money
@@ -136,6 +137,8 @@ function createPetWindow() {
     });
     // Send evolution stage to pet window
     petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+    // Send pet type to pet window
+    petWindow.webContents.send('pet:typeUpdate', currentPetType);
     // Send egg hatched state to pet window
     petWindow.webContents.send('egg:hatchedState', isEggHatched);
   });
@@ -244,6 +247,8 @@ function openShopWindow() {
   // Send initial money to shop window when it's ready
   shopWindow.webContents.once('did-finish-load', () => {
     shopWindow.webContents.send('money:update', money);
+    // Send pet state to shop window (to disable egg button if pet exists)
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched });
   });
   
   shopWindow.on('closed', () => {
@@ -326,6 +331,15 @@ ipcMain.on('shop:buy', (_event, payload) => {
     return;
   }
   
+  // Prevent buying eggs if pet already exists
+  if (itemId === 'egg1' && isEggHatched) {
+    // Pet already exists - notify shop window
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('shop:purchaseFailed', { reason: 'pet_exists' });
+    }
+    return;
+  }
+  
   if (money < cost) {
     // Not enough money - notify shop window
     if (shopWindow && !shopWindow.isDestroyed()) {
@@ -354,6 +368,10 @@ ipcMain.on('egg:hatched', () => {
   console.log('Egg has hatched! Stats decay will now start.');
   // Open name dialog window
   openNameDialog();
+  // Notify shop window that pet exists (disable egg button)
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: true });
+  }
 });
 
 // Handle pet name submission
@@ -531,6 +549,12 @@ ipcMain.on('pet:death', (_event, dead) => {
 ipcMain.on('pet:evolved', (_event, stage) => {
   currentEvolutionStage = stage;
   console.log(`Pet evolved to stage ${stage}!`);
+});
+
+// Handle pet type update (when egg hatches)
+ipcMain.on('pet:typeUpdate', (_event, petType) => {
+  currentPetType = petType;
+  console.log(`Pet type set to: ${petType}`);
 });
 
 // Handle evolution stage request from renderer

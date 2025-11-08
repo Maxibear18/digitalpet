@@ -1,58 +1,92 @@
 const { ipcRenderer } = require('electron');
 
-// Evolution and Sprite System
-// Easy to add new pets/evolutions: just add a new stage to petSprites with the sprite paths
-const petSprites = {
-    stage1: { // Botamon (initial form)
-        walk: ['sprites/botamon.png', 'sprites/botamon 2.png'],
-        happiness: ['sprites/botamon.png', 'sprites/botamon 3.png'],
-        sleep: 'sprites/botamon 4.png'
+// Pet Types System
+// Each pet type has its own sprite set following this pattern:
+// - Walking/Eating: sprite 1 and sprite 2 (alternates between them)
+// - Happiness: sprite 1 and sprite 3 (alternates between them)
+// - Sleep/Death: sprite 4 (static)
+// - Exercise: uses happiness sprites (sprite 1 and 3)
+const PET_TYPES = {
+    botamon: {
+        name: 'Botamon',
+        walk: ['sprites/botamon.png', 'sprites/botamon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/botamon.png', 'sprites/botamon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/botamon 4.png', // Sprite 4
+        canEvolve: true, // Only Botamon can evolve
+        evolution: 'koromon' // Evolves into Koromon
     },
-    stage2: { // Koromon (evolved form) - Add your 4 sprites here
-        walk: ['sprites/koromon.png', 'sprites/koromon 2.png'],
-        happiness: ['sprites/koromon.png', 'sprites/koromon 3.png'],
-        sleep: 'sprites/koromon 4.png'
+    poyomon: {
+        name: 'Poyomon',
+        walk: ['sprites/poyomon.png', 'sprites/poyomon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/poyomon.png', 'sprites/poyomon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/poyomon 4.png', // Sprite 4
+        canEvolve: false
+    },
+    punimon: {
+        name: 'Punimon',
+        walk: ['sprites/punimon.png', 'sprites/punimon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/punimon.png', 'sprites/punimon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/punimon 4.png', // Sprite 4
+        canEvolve: false
+    },
+    pitchmon: {
+        name: 'Pitchmon',
+        walk: ['sprites/pitchmon.png', 'sprites/pitchmon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/pitchmon.png', 'sprites/pitchmon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/pitchmon 4.png', // Sprite 4
+        canEvolve: false
+    },
+    koromon: {
+        name: 'Koromon',
+        walk: ['sprites/koromon.png', 'sprites/koromon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/koromon.png', 'sprites/koromon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/koromon 4.png', // Sprite 4
+        canEvolve: false // Koromon is evolved form, doesn't evolve further
     }
-    // Add more stages here for future evolutions:
-    // stage3: { walk: [...], happiness: [...], sleep: '...' }
 };
 
-let currentEvolutionStage = 1; // Start at stage 1 (Botamon)
+// Current pet state
+let currentPetType = 'botamon'; // Default pet type (will be set on hatching)
+let currentEvolutionStage = 1; // 1 = base form, 2 = evolved form (only for Botamon -> Koromon)
 
-// Get current sprites based on evolution stage
-function getCurrentSprites() {
-    const stageKey = `stage${currentEvolutionStage}`;
-    return petSprites[stageKey] || petSprites.stage1; // Fallback to stage1 if stage doesn't exist
+// Get current pet data based on pet type and evolution stage
+function getCurrentPetData() {
+    // If evolved (stage 2) and pet can evolve, use evolution form
+    if (currentEvolutionStage === 2 && PET_TYPES[currentPetType].canEvolve) {
+        const evolutionType = PET_TYPES[currentPetType].evolution;
+        return PET_TYPES[evolutionType];
+    }
+    // Otherwise use current pet type
+    return PET_TYPES[currentPetType] || PET_TYPES.botamon;
 }
 
-// Get walking sprites for current evolution stage
+// Get walking sprites for current pet
 function getWalkSprites() {
-    return getCurrentSprites().walk;
+    return getCurrentPetData().walk;
 }
 
-// Get happiness sprites for current evolution stage
+// Get happiness sprites for current pet
 function getHappinessSprites() {
-    return getCurrentSprites().happiness;
+    return getCurrentPetData().happiness;
 }
 
-// Get exercise sprites for current evolution stage (sprites 1 and 3, same as happiness)
+// Get exercise sprites for current pet (same as happiness)
 function getExerciseSprites() {
-    return getCurrentSprites().happiness;
+    return getCurrentPetData().happiness;
 }
 
-// Get sleep sprite for current evolution stage
+// Get sleep sprite for current pet
 function getSleepSprite() {
-    return getCurrentSprites().sleep;
+    return getCurrentPetData().sleep;
 }
 
-// Get size multiplier for current evolution stage (1.0 = normal size)
+// Get size multiplier for current pet (1.0 = normal size)
 function getEvolutionSizeMultiplier() {
-    // Stage 1 (Botamon): normal size (1.0)
-    // Stage 2 (Koromon): slightly smaller (0.85)
-    if (currentEvolutionStage === 2) {
+    // Koromon is slightly smaller
+    if (currentPetType === 'koromon' || (currentEvolutionStage === 2 && currentPetType === 'botamon')) {
         return 0.85; // 85% of original size
     }
-    return 1.0; // Default size for stage 1 and above
+    return 1.0; // Default size
 }
 
 // Update pet size based on evolution stage
@@ -417,6 +451,30 @@ window.addEventListener('load', () => {
                 updatePetSize();
             }
             console.log('Evolution stage loaded:', currentEvolutionStage);
+        }
+    });
+    
+    // Listen for pet type from main process
+    ipcRenderer.on('pet:typeUpdate', (_event, petType) => {
+        if (petType && PET_TYPES[petType]) {
+            currentPetType = petType;
+            console.log('Pet type loaded:', PET_TYPES[currentPetType].name);
+            // Reload sprites if pet is already initialized
+            if (pet) {
+                const sprites = getWalkSprites();
+                const sleepSprite = getSleepSprite();
+                
+                if (isSleeping || isDead) {
+                    pet.src = sleepSprite;
+                } else if (isHappy) {
+                    const happinessSprites = getHappinessSprites();
+                    pet.src = happinessSprites[happinessSpriteIndex];
+                } else {
+                    pet.src = sprites[currentSpriteIndex];
+                }
+                reloadPetImageData();
+                updatePetSize();
+            }
         }
     });
     
@@ -1428,9 +1486,10 @@ function hatchEgg() {
     eggElement = null;
     hasEgg = false;
     
-    // Notify main process that egg has hatched
+        // Notify main process that egg has hatched and send pet type
     try {
         ipcRenderer.send('egg:hatched');
+        // Pet type will be sent after random selection in playHatchingAnimation
     } catch (_) {}
     
     // Play evolution animation (similar to evolvePet but for hatching)
@@ -1443,6 +1502,19 @@ function playHatchingAnimation() {
     
     // Set evolution flag to prevent other animations
     isEvolving = true;
+    
+    // Step 0: Randomly select pet type FIRST (before showing pet)
+    const petTypes = ['botamon', 'poyomon', 'punimon', 'pitchmon'];
+    const randomIndex = Math.floor(Math.random() * petTypes.length);
+    currentPetType = petTypes[randomIndex];
+    currentEvolutionStage = 1; // Start at base form
+    
+    console.log(`Pet hatched: ${PET_TYPES[currentPetType].name}`);
+    
+    // Notify main process of pet type
+    try {
+        ipcRenderer.send('pet:typeUpdate', currentPetType);
+    } catch (_) {}
     
     // Step 1: Create white overlay
     const petWindowContainer = document.querySelector('.pet-window') || document.body;
@@ -1466,10 +1538,26 @@ function playHatchingAnimation() {
     `;
     document.body.appendChild(overlay);
     
-    // Show pet with white filter
+    // Show pet with the selected pet's sprite and white filter
     showPet();
     if (pet) {
+        // Set to the selected pet's first walking sprite
+        const sprites = getWalkSprites();
+        pet.src = sprites[0];
         pet.style.filter = 'brightness(10) saturate(0)'; // Make sprite white
+        reloadPetImageData();
+        updatePetSize();
+    }
+    
+    // Center pet in container
+    const container = document.querySelector('.pet-container');
+    if (container && pet) {
+        const rect = container.getBoundingClientRect();
+        const { width: petWidth, height: petHeight } = getPetDimensions();
+        petX = (rect.width - petWidth) / 2;
+        petY = (rect.height - petHeight) / 2;
+        pet.style.left = petX + 'px';
+        pet.style.top = petY + 'px';
     }
     
     // Fade in white overlay
@@ -1477,32 +1565,13 @@ function playHatchingAnimation() {
         overlay.style.opacity = '1';
     }, 10);
     
-    // Step 2: After overlay is visible, show pet (botamon)
+    // Step 2: After overlay is visible, remove white filter to reveal pet
     setTimeout(() => {
-        // Set to botamon (stage 1)
-        currentEvolutionStage = 1;
-        
-        // Center pet in container
-        const container = document.querySelector('.pet-container');
-        if (container && pet) {
-            const rect = container.getBoundingClientRect();
-            const { width: petWidth, height: petHeight } = getPetDimensions();
-            petX = (rect.width - petWidth) / 2;
-            petY = (rect.height - petHeight) / 2;
-            pet.style.left = petX + 'px';
-            pet.style.top = petY + 'px';
-        }
-        
-        // Remove white filter from pet
+        // Remove white filter from pet to reveal the selected pet
         if (pet) {
             pet.style.filter = 'none';
-            // Set to first walking sprite
-            const sprites = getWalkSprites();
-            pet.src = sprites[0];
-            reloadPetImageData();
-            updatePetSize();
         }
-    }, 500); // Wait 0.5s before showing pet
+    }, 500); // Wait 0.5s before revealing pet
     
     // Step 3: After 3 seconds, fade out white overlay
     setTimeout(() => {
@@ -2210,19 +2279,26 @@ function stopPassiveExperienceGain() {
 function evolvePet() {
     if (isDead || isEvolving) return; // Can't evolve when dead or already evolving
     
+    // Check if current pet can evolve (only Botamon can evolve)
+    const currentPetData = PET_TYPES[currentPetType];
+    if (!currentPetData || !currentPetData.canEvolve) {
+        console.log(`${currentPetData ? currentPetData.name : 'Pet'} cannot evolve!`);
+        return; // This pet cannot evolve
+    }
+    
+    // Check if already at max evolution stage
+    if (currentEvolutionStage >= 2) {
+        console.log('Pet is already at max evolution!');
+        return; // Already evolved
+    }
+    
     // Stop exercising if exercising (exercise should not continue during evolution)
     if (isExercising) {
         stopExercising();
     }
     
-    // Check if there's a next stage available
-    const nextStage = currentEvolutionStage + 1;
-    const nextStageKey = `stage${nextStage}`;
-    
-    if (!petSprites[nextStageKey]) {
-        console.log(`No stage ${nextStage} sprites available. Pet is at max evolution!`);
-        return; // Already at max evolution
-    }
+    // Botamon evolves to Koromon (stage 2)
+    const nextStage = 2;
     
     // Start evolution animation
     isEvolving = true;
@@ -2268,9 +2344,9 @@ function evolvePet() {
     
     // Step 3: After overlay is visible, change sprites during the 3 seconds
     setTimeout(() => {
-        // Evolve to next stage
+        // Evolve to next stage (Botamon -> Koromon)
         currentEvolutionStage = nextStage;
-        console.log(`Pet evolved to stage ${nextStage}!`);
+        console.log(`${currentPetData.name} evolved to ${PET_TYPES[currentPetData.evolution].name}!`);
         
         // Reset experience to 0
         experience = 0;
@@ -2278,7 +2354,7 @@ function evolvePet() {
             ipcRenderer.send('stats:update', { key: 'experience', value: 0, max: EXPERIENCE_MAX });
         } catch (_) {}
         
-        // Reload all sprites to use new evolution stage sprites
+        // Reload all sprites to use evolved form (Koromon)
         const sprites = getWalkSprites();
         const sleepSprite = getSleepSprite();
         
