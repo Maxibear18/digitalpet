@@ -106,6 +106,13 @@ let wasteItems = []; // Array of all waste items on screen
 let wasteCount = 0; // Track total waste count for sickness mechanic
 let wasteSpawnIntervalId = null; // Interval ID for waste spawning
 
+// Egg system
+let hasEgg = false; // Track if player has an egg
+let isEggHatched = false; // Track if egg has hatched
+let eggElement = null; // Reference to the egg element
+let eggClickCount = 0; // Track clicks on egg (need 10 to hatch)
+const EGGS_TO_HATCH = 10; // Number of clicks needed to hatch
+
 // Sickness mechanic
 let isSick = false; // Pet starts healthy
 let medicineItems = []; // Array of all medicine items on screen
@@ -264,8 +271,15 @@ window.addEventListener('load', () => {
         } catch (_) {}
         // Note: Hunger decay is now handled in main.js, so it persists even when windows are closed
         
-        // Start waste spawning system
-        startWasteSpawning();
+        // Start waste spawning system (only if egg is hatched)
+        if (isEggHatched) {
+            startWasteSpawning();
+        }
+        
+        // Hide pet initially if egg hasn't hatched
+        if (!isEggHatched && !hasEgg) {
+            hidePet();
+        }
         
         // Update sickness state if already sick (notifies main process)
         if (isSick) {
@@ -308,7 +322,9 @@ window.addEventListener('load', () => {
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;
         // Check item type
-        if (payload.type === 'medicine') {
+        if (payload.type === 'egg') {
+            spawnEgg(payload.imagePath);
+        } else if (payload.type === 'medicine') {
             spawnMedicineAndGoToIt(payload.imagePath);
         } else if (payload.type === 'medkit') {
             spawnMedkitAndGoToIt(payload.imagePath);
@@ -407,6 +423,15 @@ window.addEventListener('load', () => {
     // Listen for money updates from main process
     ipcRenderer.on('money:update', (_event, amount) => {
         updateMoneyDisplay(amount);
+    });
+    
+    // Listen for egg hatched state from main process
+    ipcRenderer.on('egg:hatchedState', (_event, hatched) => {
+        isEggHatched = hatched;
+        if (!isEggHatched && !hasEgg) {
+            // No egg and not hatched - hide pet initially
+            hidePet();
+        }
     });
     
     // Request initial money from main process
@@ -1116,15 +1141,15 @@ function initializePet() {
     
     console.log('Pet element found!');
     
-    // Make sure pet is visible
+    // Make sure pet is visible (unless egg hasn't hatched)
     pet.style.position = 'absolute';
-    pet.style.display = 'block';
-    pet.style.visibility = 'visible';
-    pet.style.opacity = '1';
+    pet.style.display = isEggHatched ? 'block' : 'none'; // Hide if egg not hatched
+    pet.style.visibility = isEggHatched ? 'visible' : 'hidden';
+    pet.style.opacity = isEggHatched ? '1' : '0';
     pet.style.left = '50px';
     pet.style.top = '50px';
     pet.style.zIndex = '100';
-    pet.style.pointerEvents = 'auto'; // Ensure pet can receive clicks
+    pet.style.pointerEvents = isEggHatched ? 'auto' : 'none'; // Ensure pet can receive clicks
     
     // Update appearance based on sickness state
     updateSickAppearance();
@@ -1264,16 +1289,242 @@ function initializePet() {
         // Set initial target
         chooseNewTarget();
         
-        // Schedule first state change
-        scheduleNextStateChange();
-        
-        // Start animation
-        if (!animationRunning) {
-            startAnimation();
+        // Schedule first state change (only if egg is hatched)
+        if (isEggHatched) {
+            scheduleNextStateChange();
+            
+            // Start animation
+            if (!animationRunning) {
+                startAnimation();
+            }
         }
     } else {
         console.error('Container not found!');
     }
+}
+
+// Hide pet (when egg hasn't hatched)
+function hidePet() {
+    if (!pet) return;
+    pet.style.display = 'none';
+    pet.style.visibility = 'hidden';
+    pet.style.opacity = '0';
+    pet.style.pointerEvents = 'none';
+    // Stop animation
+    if (animationRunning) {
+        stopAnimation();
+    }
+}
+
+// Show pet (after egg hatches)
+function showPet() {
+    if (!pet) return;
+    pet.style.display = 'block';
+    pet.style.visibility = 'visible';
+    pet.style.opacity = '1';
+    pet.style.pointerEvents = 'auto';
+    // Start animation
+    if (!animationRunning) {
+        startAnimation();
+        scheduleNextStateChange();
+    }
+}
+
+// Stop animation
+function stopAnimation() {
+    if (!animationRunning) return;
+    animationRunning = false;
+    if (animationIntervalId) {
+        clearInterval(animationIntervalId);
+        animationIntervalId = null;
+    }
+}
+
+// Spawn egg in the center of the pet container
+function spawnEgg(imagePath) {
+    if (hasEgg) {
+        console.log('Egg already exists!');
+        return; // Only one egg at a time
+    }
+    
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+    
+    hasEgg = true;
+    eggClickCount = 0;
+    
+    // Create egg element
+    const egg = document.createElement('img');
+    egg.src = imagePath;
+    egg.alt = 'Digi Egg';
+    egg.className = 'egg-item';
+    egg.style.position = 'absolute';
+    egg.style.imageRendering = 'pixelated';
+    egg.style.pointerEvents = 'auto';
+    egg.style.cursor = 'pointer';
+    egg.style.zIndex = '100'; // Same as pet
+    egg.style.width = '120px';
+    egg.style.height = 'auto';
+    
+    // Center egg in container
+    const rect = container.getBoundingClientRect();
+    const eggWidth = 120;
+    const eggHeight = 120; // Approximate
+    const centerX = (rect.width - eggWidth) / 2;
+    const centerY = (rect.height - eggHeight) / 2;
+    
+    egg.style.left = centerX + 'px';
+    egg.style.top = centerY + 'px';
+    
+    // Add click event to egg
+    egg.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleEggClick();
+    });
+    
+    container.appendChild(egg);
+    eggElement = egg;
+    
+    // Hide pet when egg is present
+    hidePet();
+    
+    console.log('Egg spawned! Click it 10 times to hatch.');
+}
+
+// Handle egg click
+function handleEggClick() {
+    if (!hasEgg || isEggHatched) return;
+    
+    eggClickCount++;
+    console.log(`Egg clicked! (${eggClickCount}/${EGGS_TO_HATCH})`);
+    
+    // Add a subtle animation to show the click
+    if (eggElement) {
+        eggElement.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            if (eggElement) {
+                eggElement.style.transform = 'scale(1)';
+            }
+        }, 100);
+    }
+    
+    // Check if egg should hatch
+    if (eggClickCount >= EGGS_TO_HATCH) {
+        hatchEgg();
+    }
+}
+
+// Hatch the egg with evolution animation
+function hatchEgg() {
+    if (!hasEgg || isEggHatched) return;
+    
+    console.log('Egg is hatching!');
+    isEggHatched = true;
+    
+    // Remove egg element
+    if (eggElement && eggElement.parentNode) {
+        eggElement.parentNode.removeChild(eggElement);
+    }
+    eggElement = null;
+    hasEgg = false;
+    
+    // Notify main process that egg has hatched
+    try {
+        ipcRenderer.send('egg:hatched');
+    } catch (_) {}
+    
+    // Play evolution animation (similar to evolvePet but for hatching)
+    playHatchingAnimation();
+}
+
+// Play hatching animation (similar to evolution)
+function playHatchingAnimation() {
+    if (!pet) return;
+    
+    // Set evolution flag to prevent other animations
+    isEvolving = true;
+    
+    // Step 1: Create white overlay
+    const petWindowContainer = document.querySelector('.pet-window') || document.body;
+    const overlay = document.createElement('div');
+    overlay.id = 'hatching-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background: white;
+        z-index: 10000;
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        pointer-events: none;
+        margin: 0;
+        padding: 0;
+    `;
+    document.body.appendChild(overlay);
+    
+    // Show pet with white filter
+    showPet();
+    if (pet) {
+        pet.style.filter = 'brightness(10) saturate(0)'; // Make sprite white
+    }
+    
+    // Fade in white overlay
+    setTimeout(() => {
+        overlay.style.opacity = '1';
+    }, 10);
+    
+    // Step 2: After overlay is visible, show pet (botamon)
+    setTimeout(() => {
+        // Set to botamon (stage 1)
+        currentEvolutionStage = 1;
+        
+        // Center pet in container
+        const container = document.querySelector('.pet-container');
+        if (container && pet) {
+            const rect = container.getBoundingClientRect();
+            const { width: petWidth, height: petHeight } = getPetDimensions();
+            petX = (rect.width - petWidth) / 2;
+            petY = (rect.height - petHeight) / 2;
+            pet.style.left = petX + 'px';
+            pet.style.top = petY + 'px';
+        }
+        
+        // Remove white filter from pet
+        if (pet) {
+            pet.style.filter = 'none';
+            // Set to first walking sprite
+            const sprites = getWalkSprites();
+            pet.src = sprites[0];
+            reloadPetImageData();
+            updatePetSize();
+        }
+    }, 500); // Wait 0.5s before showing pet
+    
+    // Step 3: After 3 seconds, fade out white overlay
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+            isEvolving = false;
+            
+            // Start normal pet behavior
+            isWalking = true;
+            scheduleNextStateChange();
+            chooseNewTarget();
+            
+            // Start waste spawning system now that pet has hatched
+            startWasteSpawning();
+            
+            console.log('Pet has hatched!');
+        }, 500); // Wait for fade out to complete
+    }, 3000); // Total 3 seconds
 }
 
 function chooseNewTarget() {
@@ -1354,8 +1605,8 @@ function updateSprite() {
 
 function updatePosition() {
     if (!pet) return;
-    // Don't move when dead, sleeping, exercising, or evolving
-    if (isDead || isSleeping || isExercising || isEvolving) return;
+    // Don't move when dead, sleeping, exercising, evolving, or egg not hatched
+    if (isDead || isSleeping || isExercising || isEvolving || !isEggHatched) return;
     
     // Priority order: medicine (if sick) > medkit > food (if not sick)
     // If sick and medicine is present, move to nearest medicine (highest priority)
@@ -1499,6 +1750,9 @@ function checkStateChange(currentTime) {
 
 function animate() {
     if (!animationRunning) return;
+    
+    // Don't animate if egg hasn't hatched
+    if (!isEggHatched) return;
     
     const currentTime = Date.now();
     
@@ -1944,7 +2198,7 @@ function startPassiveExperienceGain() {
     
     // Gain 10 experience every 3 minutes (180000ms)
     experienceTimeIntervalId = setInterval(() => {
-        if (!isDead && !isEvolving) {
+        if (!isDead && !isEvolving && isEggHatched) {
             addExperience(EXPERIENCE_GAIN_TIME_AMOUNT);
         }
     }, EXPERIENCE_GAIN_TIME_INTERVAL);
@@ -2288,9 +2542,17 @@ function startWasteSpawning() {
         clearInterval(wasteSpawnIntervalId);
     }
     
+    // Don't start if egg hasn't hatched
+    if (!isEggHatched) {
+        return;
+    }
+    
     // Spawn waste every 3 minutes
     wasteSpawnIntervalId = setInterval(() => {
-        spawnWaste();
+        // Only spawn waste if egg is hatched
+        if (isEggHatched) {
+            spawnWaste();
+        }
     }, WASTE_SPAWN_INTERVAL);
 }
 

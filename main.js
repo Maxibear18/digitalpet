@@ -9,6 +9,7 @@ let isPetExercising = false; // Track pet exercise state for menu updates
 let isPetSick = false; // Track pet sickness state (starts healthy)
 let isPetDead = false; // Track pet death state
 let wasteCount = 0; // Track waste count for sickness chance calculation
+let isEggHatched = false; // Track if egg has hatched (stats don't decay until hatched)
 
 // Store stats even when stats window is closed
 let storedStats = {
@@ -32,7 +33,8 @@ let moneyIncrementIntervalId = null;
 const ITEM_COSTS = {
   food1: 15,
   medicine1: 35,
-  medkit1: 50
+  medkit1: 50,
+  egg1: 30
 };
 
 // Hunger decay system - runs in main process so it persists even when windows are closed
@@ -132,12 +134,15 @@ function createPetWindow() {
     });
     // Send evolution stage to pet window
     petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+    // Send egg hatched state to pet window
+    petWindow.webContents.send('egg:hatchedState', isEggHatched);
   });
 
   // Build custom menu with Actions, Shop, and Stats
   buildMenu();
   
-  // Start decay systems in main process
+  // Start decay systems in main process (only if egg is hatched)
+  // Note: Decay systems will check isEggHatched internally
   startHungerDecay();
   startHappinessDecay();
   startRestDecay();
@@ -337,8 +342,14 @@ ipcMain.on('shop:buy', (_event, payload) => {
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.webContents.send('shop:spawnItem', payload);
   }
-  
+
   console.log(`Purchased ${itemId} for $${cost}. Remaining money: $${money}`);
+});
+
+// Handle egg hatching
+ipcMain.on('egg:hatched', () => {
+  isEggHatched = true;
+  console.log('Egg has hatched! Stats decay will now start.');
 });
 
 // Send money update to all windows
@@ -491,7 +502,13 @@ function startHungerDecay() {
   
   // Set up interval to decrease hunger every 2.5 minutes
   // Note: This runs regardless of sleep state - hunger always decreases
+  // But only if egg is hatched
   hungerDecayIntervalId = setInterval(() => {
+    // Don't decay stats if egg hasn't hatched
+    if (!isEggHatched) {
+      return;
+    }
+    
     if (!storedStats.hunger) {
       storedStats.hunger = { value: 50, max: HUNGER_MAX };
     }
@@ -533,6 +550,10 @@ function startHappinessDecay() {
   
   // Set up interval to decrease happiness every minute (only when awake)
   happinessDecayIntervalId = setInterval(() => {
+    // Don't decay stats if egg hasn't hatched
+    if (!isEggHatched) {
+      return;
+    }
     // Don't decay happiness if pet is sleeping
     if (isPetSleeping) {
       return;
@@ -584,6 +605,10 @@ function startRestDecay() {
   
   // Set up interval to decrease rest every 1.5 minutes (only when awake)
   restDecayIntervalId = setInterval(() => {
+    // Don't decay stats if egg hasn't hatched
+    if (!isEggHatched) {
+      return;
+    }
     // Don't decay if pet is sleeping
     if (isPetSleeping) {
       return;
@@ -845,6 +870,10 @@ function startSicknessCheck() {
   
   // Set up interval to check for sickness every 5 minutes
   sicknessCheckIntervalId = setInterval(() => {
+    // Don't check sickness if egg hasn't hatched
+    if (!isEggHatched) {
+      return;
+    }
     // Don't check if pet is already sick
     if (isPetSick) {
       return;
@@ -909,6 +938,11 @@ function startLowStatsHealthDecay() {
   
   // Set up interval to check and decrease health every minute based on low stats
   lowStatsHealthDecayIntervalId = setInterval(() => {
+    // Don't decay stats if egg hasn't hatched
+    if (!isEggHatched) {
+      return;
+    }
+    
     // Get current stat values
     const currentHunger = storedStats.hunger ? storedStats.hunger.value : 50;
     const currentRest = storedStats.rest ? storedStats.rest.value : 50;

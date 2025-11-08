@@ -83,6 +83,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'medkit1',
                     imagePath: 'sprites/medkit.png'
                 });
+            } else if (item === 'egg1') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'egg',
+                    id: 'egg1',
+                    imagePath: 'sprites/eggs/digiegg1.png'
+                });
             }
         });
     });

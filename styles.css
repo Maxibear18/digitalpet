@@ -292,3 +292,12 @@ html, body {
     user-select: none;
 }
 
+/* Egg item styles */
+.egg-item {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    transition: transform 0.1s ease;
+    cursor: pointer;
+}
+
