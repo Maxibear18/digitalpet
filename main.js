@@ -17,14 +17,14 @@ let storedStats = {
   rest: { value: 50, max: 100 },
   hunger: { value: 50, max: 100 },
   happiness: { value: 50, max: 100 },
-  experience: { value: 0, max: 100 } // Hidden stat - not shown in stats window
+  experience: { value: 0, max: 300 } // Hidden stat - not shown in stats window
 };
 
 // Evolution system
 let currentEvolutionStage = 1; // Start at stage 1
 
 // Money system
-let money = 100; // Starting money
+let money = 300; // Starting money
 const MONEY_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
 const MONEY_INCREMENT_AMOUNT = 50; // Amount money increases by
 let moneyIncrementIntervalId = null;
@@ -38,7 +38,7 @@ const ITEM_COSTS = {
 };
 
 // Hunger decay system - runs in main process so it persists even when windows are closed
-const HUNGER_DECAY_INTERVAL = 150000; // 2.5 minutes in milliseconds
+const HUNGER_DECAY_INTERVAL = 120000; // 2 minutes in milliseconds
 const HUNGER_DECAY_AMOUNT = 10; // Amount hunger decreases by
 const HUNGER_MAX = 100;
 const HUNGER_MIN = 0;
@@ -500,7 +500,7 @@ function startHungerDecay() {
     clearInterval(hungerDecayIntervalId);
   }
   
-  // Set up interval to decrease hunger every 2.5 minutes
+  // Set up interval to decrease hunger every 2 minutes
   // Note: This runs regardless of sleep state - hunger always decreases
   // But only if egg is hatched
   hungerDecayIntervalId = setInterval(() => {
@@ -1062,10 +1062,10 @@ function startExerciseInterval() {
     
     // Gain experience (30 per minute)
     if (!storedStats.experience) {
-      storedStats.experience = { value: 0, max: 100 };
+      storedStats.experience = { value: 0, max: 300 };
     }
     const currentExp = storedStats.experience.value;
-    const newExp = Math.min(100, currentExp + EXERCISE_EXP_GAIN);
+    const newExp = Math.min(300, currentExp + EXERCISE_EXP_GAIN);
     storedStats.experience.value = newExp;
     
     // Send experience update to pet window (but not to stats window, as it's hidden)
@@ -1073,7 +1073,7 @@ function startExerciseInterval() {
       petWindow.webContents.send('stats:update', {
         key: 'experience',
         value: newExp,
-        max: 100
+        max: 300
       });
     }
     

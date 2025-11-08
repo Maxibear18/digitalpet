@@ -126,7 +126,7 @@ let isDead = false; // Pet death state
 
 // Experience and Evolution system
 let experience = 0; // Current experience (hidden stat)
-const EXPERIENCE_MAX = 100; // Experience needed to evolve
+const EXPERIENCE_MAX = 300; // Experience needed to evolve
 const EXPERIENCE_GAIN_EAT = 2; // Experience gained from eating
 const EXPERIENCE_GAIN_PET = 2; // Experience gained from petting
 const EXPERIENCE_GAIN_MOVE = 1; // Experience gained from moving
@@ -157,7 +157,7 @@ const HEALTH_DECAY_AMOUNT = 10; // Amount health decreases by when sick
 let hunger = 50;
 const HUNGER_MAX = 100;
 const HUNGER_MIN = 0;
-const HUNGER_DECAY_INTERVAL = 150000; // 2.5 minutes in milliseconds
+const HUNGER_DECAY_INTERVAL = 120000; // 2 minutes in milliseconds
 const HUNGER_DECAY_AMOUNT = 10; // Amount hunger decreases by
 let hungerDecayIntervalId = null;
 
@@ -487,7 +487,7 @@ window.addEventListener('load', () => {
             const oldExperience = experience;
             experience = value;
             // Check if pet should evolve (experience reached max)
-            if (experience >= 100 && oldExperience < 100 && !isEvolving) {
+            if (experience >= EXPERIENCE_MAX && oldExperience < EXPERIENCE_MAX && !isEvolving) {
                 evolvePet();
             }
         }
@@ -1684,12 +1684,6 @@ function updatePosition() {
         const currentSpeed = isSick ? walkSpeed * 0.5 : walkSpeed;
         petX += (dx / distance) * currentSpeed;
         petY += (dy / distance) * currentSpeed;
-        
-        // Gain experience from moving (small amount per movement update)
-        // Only give experience every so often to avoid spamming
-        if (Math.random() < 0.05) { // 5% chance per frame
-            addExperience(EXPERIENCE_GAIN_MOVE);
-        }
     }
     
     // Keep within bounds

@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-let currentMoney = 100; // Will be updated from main process
+let currentMoney = 300; // Will be updated from main process
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
