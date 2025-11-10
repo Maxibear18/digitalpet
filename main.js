@@ -4,6 +4,7 @@ const path = require('path');
 let petWindow;
 let shopWindow;
 let statsWindow;
+let gamesWindow;
 let nameDialogWindow = null; // Name dialog window
 let petName = 'Digital Pet'; // Default pet name
 let isPetSleeping = false; // Track pet sleep state for menu updates
@@ -220,6 +221,17 @@ function buildMenu() {
       ]
     },
     {
+      label: 'Games',
+      submenu: [
+        {
+          label: 'Simon Says',
+          click: () => {
+            openSimonSaysWindow();
+          }
+        }
+      ]
+    },
+    {
       label: 'Shop',
       click: () => {
         openShopWindow();
@@ -265,6 +277,36 @@ function openShopWindow() {
   
   shopWindow.on('closed', () => {
     shopWindow = null;
+  });
+}
+
+function openGamesWindow() {
+  if (gamesWindow && !gamesWindow.isDestroyed()) {
+    gamesWindow.focus();
+    return;
+  }
+  gamesWindow = new BrowserWindow({
+    width: 500,
+    height: 400,
+    resizable: true,
+    title: 'Games',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false // Prevent throttling when window is minimized
+    }
+  });
+  if (gamesWindow && !gamesWindow.isDestroyed()) {
+    gamesWindow.setMenu(null);
+    gamesWindow.setMenuBarVisibility(false);
+  }
+  gamesWindow.loadFile('games.html');
+  
+  gamesWindow.on('closed', () => {
+    gamesWindow = null;
   });
 }
 
@@ -621,6 +663,152 @@ ipcMain.on('waste:updateCount', (_event, count) => {
 // Handle money request from any window
 ipcMain.on('money:request', (event) => {
   event.reply('money:response', money);
+});
+
+// Handle game window opening
+let simonSaysWindow = null;
+ipcMain.on('game:open', (_event, gameName) => {
+  if (gameName === 'simon-says') {
+    openSimonSaysWindow();
+  }
+});
+
+
+// Handle pet happiness animation trigger from game
+ipcMain.on('game:petHappy', () => {
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.webContents.send('game:petHappy');
+  }
+});
+
+// Open Simon Says game window
+function openSimonSaysWindow() {
+  if (simonSaysWindow && !simonSaysWindow.isDestroyed()) {
+    simonSaysWindow.focus();
+    return;
+  }
+  simonSaysWindow = new BrowserWindow({
+    width: 500,
+    height: 600,
+    resizable: true,
+    title: 'Simon Says',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (simonSaysWindow && !simonSaysWindow.isDestroyed()) {
+    simonSaysWindow.setMenu(null);
+    simonSaysWindow.setMenuBarVisibility(false);
+  }
+  simonSaysWindow.loadFile('simon-says.html');
+  
+  // Send pet type to game window when it's ready
+  simonSaysWindow.webContents.once('did-finish-load', () => {
+    simonSaysWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+  });
+  
+  simonSaysWindow.on('closed', () => {
+    simonSaysWindow = null;
+  });
+}
+
+// Handle game rewards
+ipcMain.on('game:reward', (_event, rewards) => {
+  // rewards should be an object with: { money, happiness, experience, hunger, rest }
+  if (rewards.money) {
+    money += rewards.money;
+    sendMoneyUpdate();
+  }
+  if (rewards.happiness && storedStats.happiness) {
+    const currentHappiness = storedStats.happiness.value;
+    const newHappiness = Math.min(100, Math.max(0, currentHappiness + rewards.happiness));
+    storedStats.happiness.value = newHappiness;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'happiness',
+        value: newHappiness,
+        max: 100
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'happiness',
+        value: newHappiness,
+        max: 100
+      });
+    }
+  }
+  if (rewards.experience && storedStats.experience) {
+    const currentExp = storedStats.experience.value;
+    const newExp = Math.min(300, currentExp + rewards.experience);
+    storedStats.experience.value = newExp;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'experience',
+        value: newExp,
+        max: 300
+      });
+    }
+  }
+  if (rewards.hunger && storedStats.hunger) {
+    const currentHunger = storedStats.hunger.value;
+    const newHunger = Math.min(100, Math.max(0, currentHunger + rewards.hunger));
+    storedStats.hunger.value = newHunger;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'hunger',
+        value: newHunger,
+        max: 100
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'hunger',
+        value: newHunger,
+        max: 100
+      });
+    }
+  }
+  if (rewards.rest && storedStats.rest) {
+    const currentRest = storedStats.rest.value;
+    const newRest = Math.min(100, Math.max(0, currentRest + rewards.rest));
+    storedStats.rest.value = newRest;
+    
+    // Send update to pet window
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: 100
+      });
+    }
+    
+    // Forward to stats window if it's open
+    if (statsWindow && !statsWindow.isDestroyed()) {
+      statsWindow.webContents.send('stats:update', {
+        key: 'rest',
+        value: newRest,
+        max: 100
+      });
+    }
+  }
+  
+  console.log(`Game rewards: +$${rewards.money || 0}, +${rewards.happiness || 0} happiness, +${rewards.experience || 0} exp, ${rewards.hunger || 0} hunger, ${rewards.rest || 0} rest`);
 });
 
 // Handle request for stored stats (so pet window can load them on startup)

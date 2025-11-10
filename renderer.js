@@ -460,6 +460,13 @@ window.addEventListener('load', () => {
         }
     });
     
+    // Handle game-triggered happiness animation
+    ipcRenderer.on('game:petHappy', () => {
+        if (!isSleeping && !isDead && !isExercising) {
+            playHappinessAnimation(false);
+        }
+    });
+    
     // Listen for pet becoming sick from main process
     ipcRenderer.on('pet:becameSick', () => {
         if (!isSick && !isDead) {
