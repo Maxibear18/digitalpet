@@ -235,6 +235,14 @@ function buildMenu() {
             openSimonSaysWindow();
           },
           enabled: isEggHatched // Disable until pet is hatched
+        },
+        {
+          label: 'Memory Match',
+          click: () => {
+            if (!isEggHatched) return; // Prevent action if pet not hatched
+            openMemoryMatchWindow();
+          },
+          enabled: isEggHatched // Disable until pet is hatched
         }
       ]
     },
@@ -685,9 +693,12 @@ ipcMain.on('money:request', (event) => {
 
 // Handle game window opening
 let simonSaysWindow = null;
+let memoryMatchWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
+  } else if (gameName === 'memory-match') {
+    openMemoryMatchWindow();
   }
 });
 
@@ -732,6 +743,37 @@ function openSimonSaysWindow() {
   
   simonSaysWindow.on('closed', () => {
     simonSaysWindow = null;
+  });
+}
+
+// Open Memory Match game window
+function openMemoryMatchWindow() {
+  if (memoryMatchWindow && !memoryMatchWindow.isDestroyed()) {
+    memoryMatchWindow.focus();
+    return;
+  }
+  memoryMatchWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    resizable: true,
+    title: 'Memory Match',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (memoryMatchWindow && !memoryMatchWindow.isDestroyed()) {
+    memoryMatchWindow.setMenu(null);
+    memoryMatchWindow.setMenuBarVisibility(false);
+  }
+  memoryMatchWindow.loadFile('memory-match.html');
+  
+  memoryMatchWindow.on('closed', () => {
+    memoryMatchWindow = null;
   });
 }
 
