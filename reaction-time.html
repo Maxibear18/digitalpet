@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time</title>
+    <link rel="stylesheet" href="reaction-time.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="reaction-time.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Reaction Time</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="info-label">Target Time:</span>
+                        <span class="info-value">10.00 seconds</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Your Time:</span>
+                        <span class="info-value" id="yourTime">--</span>
+                    </div>
+                </div>
+                <div class="status-message" id="statusMessage">Press SPACEBAR when the timer reaches 10 seconds!</div>
+            </div>
+            
+            <div class="timer-container">
+                <div class="timer-display" id="timerDisplay">0.00</div>
+                <div class="pet-bubble">
+                    <img id="petSprite" src="sprites/botamon/botamon.png" alt="Pet">
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <div class="instruction-text" id="instructionText">Press SPACEBAR to start the timer, then press it again at exactly 10 seconds!</div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="startBtn">Start Game</button>
+            </div>
+            
+            <div class="results" id="results" style="display: none;">
+                <div class="result-title" id="resultTitle">Result</div>
+                <div class="result-content">
+                    <div class="result-item">Time: <span id="resultTime">0.00</span> seconds</div>
+                    <div class="result-item">Difference: <span id="resultDifference">0.00</span> seconds</div>
+                    <div class="result-item">Money Earned: $<span id="resultMoney">0</span></div>
+                </div>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Reaction Time</h2>
+                        <button class="help-close-btn" id="helpCloseBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <h3>Objective</h3>
+                        <p>Press the SPACEBAR to stop the timer at exactly 10 seconds. The closer you get, the more money you earn!</p>
+                        
+                        <h3>How to Play</h3>
+                        <ol>
+                            <li>Click "Start Game" to begin</li>
+                            <li>Press SPACEBAR to start the timer</li>
+                            <li>Watch the timer count up</li>
+                            <li>Press SPACEBAR again when you think it's at exactly 10 seconds</li>
+                            <li>See how close you got!</li>
+                        </ol>
+                        
+                        <h3>Rewards</h3>
+                        <ul>
+                            <li><strong>Exactly 10.00 seconds:</strong> $55</li>
+                            <li><strong>0.1 or 0.2 seconds off:</strong> $30 (halved if over 10s)</li>
+                            <li><strong>0.3 seconds off:</strong> $25 (halved if over 10s)</li>
+                            <li><strong>0.5 seconds off:</strong> $20 (halved if over 10s)</li>
+                            <li><strong>0.7 seconds off:</strong> $15 (halved if over 10s)</li>
+                            <li><strong>1.0 second off:</strong> $10 (halved if over 10s)</li>
+                            <li><strong>More than 1 second off:</strong> $0</li>
+                        </ul>
+                        <p><em>Note: Rewards are halved if you go over 10 seconds (e.g., 0.3s over = $12 instead of $25)</em></p>
+                        
+                        <h3>Pet Effects</h3>
+                        <ul>
+                            <li>Each game: -5 sleep, -5 hunger, +5 experience, +5 happiness</li>
+                        </ul>
+                        
+                        <h3>Tips</h3>
+                        <ul>
+                            <li>Focus on the timer and try to anticipate when it will hit 10 seconds</li>
+                            <li>Practice your timing - it gets easier with experience!</li>
+                            <li>Don't rush - take your time to get the perfect timing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+

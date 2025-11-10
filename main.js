@@ -243,6 +243,14 @@ function buildMenu() {
             openMemoryMatchWindow();
           },
           enabled: isEggHatched // Disable until pet is hatched
+        },
+        {
+          label: 'Reaction Time',
+          click: () => {
+            if (!isEggHatched) return; // Prevent action if pet not hatched
+            openReactionTimeWindow();
+          },
+          enabled: isEggHatched // Disable until pet is hatched
         }
       ]
     },
@@ -694,11 +702,14 @@ ipcMain.on('money:request', (event) => {
 // Handle game window opening
 let simonSaysWindow = null;
 let memoryMatchWindow = null;
+let reactionTimeWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
   } else if (gameName === 'memory-match') {
     openMemoryMatchWindow();
+  } else if (gameName === 'reaction-time') {
+    openReactionTimeWindow();
   }
 });
 
@@ -774,6 +785,42 @@ function openMemoryMatchWindow() {
   
   memoryMatchWindow.on('closed', () => {
     memoryMatchWindow = null;
+  });
+}
+
+// Open Reaction Time game window
+function openReactionTimeWindow() {
+  if (reactionTimeWindow && !reactionTimeWindow.isDestroyed()) {
+    reactionTimeWindow.focus();
+    return;
+  }
+  reactionTimeWindow = new BrowserWindow({
+    width: 500,
+    height: 600,
+    resizable: true,
+    title: 'Reaction Time',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (reactionTimeWindow && !reactionTimeWindow.isDestroyed()) {
+    reactionTimeWindow.setMenu(null);
+    reactionTimeWindow.setMenuBarVisibility(false);
+  }
+  reactionTimeWindow.loadFile('reaction-time.html');
+  
+  // Send pet type to game window when it's ready
+  reactionTimeWindow.webContents.once('did-finish-load', () => {
+    reactionTimeWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+  });
+  
+  reactionTimeWindow.on('closed', () => {
+    reactionTimeWindow = null;
   });
 }
 
