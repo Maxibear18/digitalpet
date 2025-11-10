@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-let currentMoney = 300; // Will be updated from main process
+let currentMoney = 1500; // Will be updated from main process
 let hasPet = false; // Track if pet exists (egg hatched)
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -188,6 +188,48 @@ window.addEventListener('DOMContentLoaded', () => {
                     type: 'egg',
                     id: 'egg1',
                     imagePath: 'sprites/eggs/digiegg1.png'
+                });
+            } else if (item === 'bubblewand') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'bubblewand',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Bubble Wand.png'
+                });
+            } else if (item === 'calculator') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'calculator',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Calculator.png'
+                });
+            } else if (item === 'chimes') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'chimes',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Chimes.png'
+                });
+            } else if (item === 'musicplayer') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'musicplayer',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Music Player.png'
+                });
+            } else if (item === 'paddle') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'paddle',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Paddle.png'
+                });
+            } else if (item === 'pudding') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'toy',
+                    id: 'pudding',
+                    toyCost: cost,
+                    imagePath: 'sprites/toys/Pudding.png'
                 });
             }
         });

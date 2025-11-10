@@ -27,7 +27,7 @@ let currentEvolutionStage = 1; // Start at stage 1
 let currentPetType = 'botamon'; // Current pet type (botamon, poyomon, punimon, pitchmon)
 
 // Money system
-let money = 300; // Starting money
+let money = 1500; // Starting money
 const MONEY_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
 const MONEY_INCREMENT_AMOUNT = 50; // Amount money increases by
 let moneyIncrementIntervalId = null;
@@ -43,7 +43,13 @@ const ITEM_COSTS = {
   coffee: 60,
   medicine1: 35,
   medkit1: 50,
-  egg1: 30
+  egg1: 30,
+  bubblewand: 200,
+  calculator: 325,
+  chimes: 250,
+  musicplayer: 300,
+  paddle: 350,
+  pudding: 225
 };
 
 // Hunger decay system - runs in main process so it persists even when windows are closed
@@ -370,6 +376,8 @@ ipcMain.on('shop:buy', (_event, payload) => {
       spawnPayload.medicineCost = cost;
     } else if (payload.type === 'medkit' && cost !== undefined) {
       spawnPayload.medkitCost = cost;
+    } else if (payload.type === 'toy' && cost !== undefined) {
+      spawnPayload.toyCost = cost;
     }
     petWindow.webContents.send('shop:spawnItem', spawnPayload);
   }

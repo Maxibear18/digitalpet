@@ -220,6 +220,9 @@ let isEvolving = false; // Track if evolution animation is playing
 let medkitItems = []; // Array of all medkit items on screen
 let currentMedkitEl = null; // Currently targeted medkit item
 
+// Toy items
+let toyItems = []; // Array of all purchased toys
+
 // Petting mechanic
 let petClickCount = 0; // Track number of clicks for petting
 const PETS_FOR_HAPPINESS = 10; // Number of pets needed to increase happiness
@@ -411,6 +414,8 @@ window.addEventListener('load', () => {
             spawnMedkitAndGoToIt(payload.imagePath, payload.medkitCost);
         } else if (payload.type === 'food') {
             spawnFoodAndGoToIt(payload.imagePath, payload.foodType, payload.foodCost);
+        } else if (payload.type === 'toy') {
+            spawnToy(payload.imagePath, payload.id, payload.toyCost);
         } else {
             spawnFoodAndGoToIt(payload.imagePath, payload.foodType, payload.foodCost);
         }
@@ -1059,6 +1064,51 @@ function finishEatingMedkit() {
     
     // Play happiness animation
     playHappinessAnimation(false);
+}
+
+// Spawn toy and display it in the bottom right
+function spawnToy(imagePath, toyId, toyCost) {
+    const container = document.querySelector('.pet-container');
+    if (!container) return;
+
+    const item = document.createElement('img');
+    item.src = imagePath;
+    item.alt = 'Toy';
+    item.className = 'toy-item'; // Add class to identify toy items
+    item.dataset.toyId = toyId; // Store toy ID
+    item.dataset.toyCost = toyCost || 0; // Store toy cost
+    item.style.position = 'absolute';
+    item.style.imageRendering = 'pixelated';
+    item.style.pointerEvents = 'auto'; // Make clickable
+    item.style.cursor = 'pointer'; // Show pointer cursor
+    item.style.zIndex = '100'; // High z-index to appear above other items
+    item.style.width = '32px'; // Smaller size for icons
+    item.style.height = 'auto';
+    item.style.bottom = '8px'; // Position at bottom
+    item.style.right = '8px'; // Start at right edge
+
+    container.appendChild(item);
+    
+    // Add to toy items array
+    toyItems.push(item);
+    
+    // Update positions of all toys to ensure proper stacking
+    // This will position the new toy correctly based on its index
+    updateToyPositions();
+}
+
+// Update positions of all toys to ensure proper stacking
+function updateToyPositions() {
+    const toyWidth = 32;
+    const toySpacing = 4;
+    const padding = 8;
+    
+    toyItems.forEach((toy, index) => {
+        if (toy.parentNode) {
+            const rightPosition = padding + (index * (toyWidth + toySpacing));
+            toy.style.right = rightPosition + 'px';
+        }
+    });
 }
 
 // Remove a food item when clicked by user

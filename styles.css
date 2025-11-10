@@ -301,3 +301,20 @@ html, body {
     cursor: pointer;
 }
 
+/* Toy item styles - displayed in bottom right */
+.toy-item {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    position: absolute;
+    bottom: 8px;
+    z-index: 100;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.toy-item:hover {
+    transform: scale(1.1);
+}
+
