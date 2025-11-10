@@ -108,22 +108,74 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             
             // Send purchase request to main process
-            if (item === 'food1') {
+            if (item === 'cherry') {
                 ipcRenderer.send('shop:buy', {
                     type: 'food',
-                    id: 'food1',
+                    id: 'cherry',
+                    foodType: 'cherry',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/cherry.png'
+                });
+            } else if (item === 'riceball') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'riceball',
+                    foodType: 'riceball',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/riceball.png'
+                });
+            } else if (item === 'sandwich') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'sandwich',
+                    foodType: 'sandwich',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/sandwich.png'
+                });
+            } else if (item === 'meat') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'meat',
+                    foodType: 'meat',
+                    foodCost: cost,
                     imagePath: 'sprites/food/Food1.png'
+                });
+            } else if (item === 'cake') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'cake',
+                    foodType: 'cake',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/cake.png'
+                });
+            } else if (item === 'icecream') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'icecream',
+                    foodType: 'icecream',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/ice cream.png'
+                });
+            } else if (item === 'coffee') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'food',
+                    id: 'coffee',
+                    foodType: 'coffee',
+                    foodCost: cost,
+                    imagePath: 'sprites/food/coffee.png'
                 });
             } else if (item === 'medicine1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'medicine',
                     id: 'medicine1',
+                    medicineCost: cost,
                     imagePath: 'sprites/items/pill.png'
                 });
             } else if (item === 'medkit1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'medkit',
                     id: 'medkit1',
+                    medkitCost: cost,
                     imagePath: 'sprites/items/medkit.png'
                 });
             } else if (item === 'egg1') {

@@ -1,5 +1,52 @@
 const { ipcRenderer } = require('electron');
 
+// Food Types System
+// Each food type has its own effects on pet stats
+const FOOD_TYPES = {
+    cherry: {
+        name: 'Cherry',
+        hunger: 10,
+        happiness: 0,
+        rest: 0
+    },
+    riceball: {
+        name: 'Riceball',
+        hunger: 15,
+        happiness: 0,
+        rest: 0
+    },
+    sandwich: {
+        name: 'Sandwich',
+        hunger: 25,
+        happiness: 0,
+        rest: 0
+    },
+    meat: {
+        name: 'Meat',
+        hunger: 35,
+        happiness: 0,
+        rest: 0
+    },
+    cake: {
+        name: 'Cake',
+        hunger: 50,
+        happiness: 0,
+        rest: 0
+    },
+    icecream: {
+        name: 'Ice Cream',
+        hunger: 15,
+        happiness: 15,
+        rest: 0
+    },
+    coffee: {
+        name: 'Coffee',
+        hunger: 10,
+        happiness: 0,
+        rest: 20
+    }
+};
+
 // Pet Types System
 // Each pet type has its own sprite set following this pattern:
 // - Walking/Eating: sprite 1 and sprite 2 (alternates between them)
@@ -359,11 +406,13 @@ window.addEventListener('load', () => {
         if (payload.type === 'egg') {
             spawnEgg(payload.imagePath);
         } else if (payload.type === 'medicine') {
-            spawnMedicineAndGoToIt(payload.imagePath);
+            spawnMedicineAndGoToIt(payload.imagePath, payload.medicineCost);
         } else if (payload.type === 'medkit') {
-            spawnMedkitAndGoToIt(payload.imagePath);
+            spawnMedkitAndGoToIt(payload.imagePath, payload.medkitCost);
+        } else if (payload.type === 'food') {
+            spawnFoodAndGoToIt(payload.imagePath, payload.foodType, payload.foodCost);
         } else {
-            spawnFoodAndGoToIt(payload.imagePath);
+            spawnFoodAndGoToIt(payload.imagePath, payload.foodType, payload.foodCost);
         }
     });
 
@@ -552,7 +601,7 @@ window.addEventListener('load', () => {
     });
 });
 
-function spawnFoodAndGoToIt(imagePath) {
+function spawnFoodAndGoToIt(imagePath, foodType, foodCost) {
     if (!pet) return;
     const container = document.querySelector('.pet-container');
     if (!container) return;
@@ -561,6 +610,8 @@ function spawnFoodAndGoToIt(imagePath) {
     item.src = imagePath;
     item.alt = 'Food';
     item.className = 'food-item'; // Add class to identify food items
+    item.dataset.foodType = foodType; // Store food type for effects
+    item.dataset.foodCost = foodCost || 0; // Store food cost for refund calculation
     item.style.position = 'absolute';
     item.style.imageRendering = 'pixelated';
     item.style.pointerEvents = 'auto'; // Make clickable
@@ -594,7 +645,7 @@ function spawnFoodAndGoToIt(imagePath) {
 }
 
 // Spawn medicine and make pet go to it (only if sick)
-function spawnMedicineAndGoToIt(imagePath) {
+function spawnMedicineAndGoToIt(imagePath, medicineCost) {
     if (!pet) return;
     const container = document.querySelector('.pet-container');
     if (!container) return;
@@ -603,6 +654,7 @@ function spawnMedicineAndGoToIt(imagePath) {
     item.src = imagePath;
     item.alt = 'Medicine';
     item.className = 'medicine-item'; // Add class to identify medicine items
+    item.dataset.medicineCost = medicineCost || 0; // Store medicine cost for refund calculation
     item.style.position = 'absolute';
     item.style.imageRendering = 'pixelated';
     item.style.pointerEvents = 'auto'; // Make clickable
@@ -638,6 +690,17 @@ function spawnMedicineAndGoToIt(imagePath) {
 // Remove a medicine item when clicked by user
 function removeMedicineItem(medicineItem) {
     if (!medicineItem || !medicineItem.parentNode) return;
+    
+    // Calculate refund: half of purchase price, rounded up
+    const medicineCost = parseFloat(medicineItem.dataset.medicineCost) || 0;
+    if (medicineCost > 0) {
+        const refundAmount = Math.ceil(medicineCost / 2);
+        // Send refund to main process
+        try {
+            ipcRenderer.send('item:refund', refundAmount);
+        } catch (_) {}
+        console.log(`Medicine removed. Refund: $${refundAmount} (half of $${medicineCost}, rounded up)`);
+    }
     
     // Remove from DOM
     medicineItem.parentNode.removeChild(medicineItem);
@@ -791,7 +854,7 @@ function finishEatingMedicine() {
 }
 
 // Spawn medkit and make pet go to it (can be used anytime, not just when sick)
-function spawnMedkitAndGoToIt(imagePath) {
+function spawnMedkitAndGoToIt(imagePath, medkitCost) {
     if (!pet) return;
     const container = document.querySelector('.pet-container');
     if (!container) return;
@@ -800,6 +863,7 @@ function spawnMedkitAndGoToIt(imagePath) {
     item.src = imagePath;
     item.alt = 'Medkit';
     item.className = 'medkit-item'; // Add class to identify medkit items
+    item.dataset.medkitCost = medkitCost || 0; // Store medkit cost for refund calculation
     item.style.position = 'absolute';
     item.style.imageRendering = 'pixelated';
     item.style.pointerEvents = 'auto'; // Make clickable
@@ -833,6 +897,17 @@ function spawnMedkitAndGoToIt(imagePath) {
 // Remove a medkit item when clicked by user
 function removeMedkitItem(medkitItem) {
     if (!medkitItem || !medkitItem.parentNode) return;
+    
+    // Calculate refund: half of purchase price, rounded up
+    const medkitCost = parseFloat(medkitItem.dataset.medkitCost) || 0;
+    if (medkitCost > 0) {
+        const refundAmount = Math.ceil(medkitCost / 2);
+        // Send refund to main process
+        try {
+            ipcRenderer.send('item:refund', refundAmount);
+        } catch (_) {}
+        console.log(`Medkit removed. Refund: $${refundAmount} (half of $${medkitCost}, rounded up)`);
+    }
     
     // Remove from DOM
     medkitItem.parentNode.removeChild(medkitItem);
@@ -989,6 +1064,17 @@ function finishEatingMedkit() {
 // Remove a food item when clicked by user
 function removeFoodItem(foodItem) {
     if (!foodItem || !foodItem.parentNode) return;
+    
+    // Calculate refund: half of purchase price, rounded up
+    const foodCost = parseFloat(foodItem.dataset.foodCost) || 0;
+    if (foodCost > 0) {
+        const refundAmount = Math.ceil(foodCost / 2);
+        // Send refund to main process
+        try {
+            ipcRenderer.send('food:refund', refundAmount);
+        } catch (_) {}
+        console.log(`Food removed. Refund: $${refundAmount} (half of $${foodCost}, rounded up)`);
+    }
     
     // Remove from DOM
     foodItem.parentNode.removeChild(foodItem);
@@ -1898,13 +1984,34 @@ function finishEating() {
         currentFoodEl.parentNode.removeChild(currentFoodEl);
     }
     
+    // Get food type and effects
+    const foodType = currentFoodEl ? currentFoodEl.dataset.foodType : null;
+    const foodData = foodType && FOOD_TYPES[foodType] ? FOOD_TYPES[foodType] : null;
+    
     // Remove from food items array
     foodItems = foodItems.filter(food => food !== currentFoodEl);
     
     currentFoodEl = null;
     isEating = false;
-    // Increase hunger by 5 and clamp
-    setHunger(hunger + 5);
+    
+    // Apply food effects
+    if (foodData) {
+        // Increase hunger
+        if (foodData.hunger > 0) {
+            setHunger(hunger + foodData.hunger);
+        }
+        // Increase happiness
+        if (foodData.happiness > 0) {
+            setHappiness(happiness + foodData.happiness);
+        }
+        // Increase rest
+        if (foodData.rest > 0) {
+            setRest(rest + foodData.rest);
+        }
+    } else {
+        // Fallback: default hunger increase (for backwards compatibility)
+        setHunger(hunger + 5);
+    }
     
     // Gain experience from eating
     addExperience(EXPERIENCE_GAIN_EAT);

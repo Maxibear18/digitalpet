@@ -34,7 +34,13 @@ let moneyIncrementIntervalId = null;
 
 // Item costs
 const ITEM_COSTS = {
-  food1: 15,
+  cherry: 15,
+  riceball: 25,
+  sandwich: 35,
+  meat: 45,
+  cake: 60,
+  icecream: 40,
+  coffee: 60,
   medicine1: 35,
   medkit1: 50,
   egg1: 30
@@ -355,11 +361,46 @@ ipcMain.on('shop:buy', (_event, payload) => {
   sendMoneyUpdate();
   
   // Forward purchase to pet window to spawn item
+  // Include costs in payload for items
   if (petWindow && !petWindow.isDestroyed()) {
-    petWindow.webContents.send('shop:spawnItem', payload);
+    const spawnPayload = { ...payload };
+    if (payload.type === 'food' && cost !== undefined) {
+      spawnPayload.foodCost = cost;
+    } else if (payload.type === 'medicine' && cost !== undefined) {
+      spawnPayload.medicineCost = cost;
+    } else if (payload.type === 'medkit' && cost !== undefined) {
+      spawnPayload.medkitCost = cost;
+    }
+    petWindow.webContents.send('shop:spawnItem', spawnPayload);
   }
 
   console.log(`Purchased ${itemId} for $${cost}. Remaining money: $${money}`);
+});
+
+// Handle food refund when user removes food item
+ipcMain.on('food:refund', (_event, refundAmount) => {
+  if (typeof refundAmount !== 'number' || refundAmount <= 0) return;
+  
+  // Add refund to money
+  money += refundAmount;
+  
+  // Send money update to all windows
+  sendMoneyUpdate();
+  
+  console.log(`Food refund: $${refundAmount}. New total: $${money}`);
+});
+
+// Handle item refund when user removes medicine or medkit item
+ipcMain.on('item:refund', (_event, refundAmount) => {
+  if (typeof refundAmount !== 'number' || refundAmount <= 0) return;
+  
+  // Add refund to money
+  money += refundAmount;
+  
+  // Send money update to all windows
+  sendMoneyUpdate();
+  
+  console.log(`Item refund: $${refundAmount}. New total: $${money}`);
 });
 
 // Handle egg hatching
