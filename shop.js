@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 
 let currentMoney = 1500; // Will be updated from main process
 let hasPet = false; // Track if pet exists (egg hatched)
+let hasEgg = false; // Track if player has purchased an egg
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -44,6 +45,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Listen for pet state updates (to enable/disable egg button)
     ipcRenderer.on('pet:stateUpdate', (_event, data) => {
         hasPet = data.isEggHatched || false;
+        hasEgg = data.hasEgg || false;
         updateEggButton();
     });
 
@@ -77,7 +79,7 @@ window.addEventListener('DOMContentLoaded', () => {
     function updateEggButton() {
         const eggButton = buyButtons.find(btn => btn.dataset.item === 'egg1');
         if (eggButton) {
-            if (hasPet) {
+            if (hasPet || hasEgg) {
                 eggButton.disabled = true;
                 eggButton.style.opacity = '0.5';
                 eggButton.style.cursor = 'not-allowed';
@@ -179,9 +181,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     imagePath: 'sprites/items/medkit.png'
                 });
             } else if (item === 'egg1') {
-                // Check if pet already exists
-                if (hasPet) {
-                    alert('You already have a pet! You cannot buy another egg.');
+                // Check if pet already exists or egg already purchased
+                if (hasPet || hasEgg) {
+                    alert('You already have an egg or pet! You cannot buy another egg.');
                     return;
                 }
                 ipcRenderer.send('shop:buy', {

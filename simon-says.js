@@ -182,10 +182,13 @@ function nextRound() {
     addToSequence();
     
     // Give $2 for completing a round successfully
+    // Every 3 rounds, give 2 experience
+    const expReward = (round % 3 === 0) ? 2 : 0;
+    
     ipcRenderer.send('game:reward', {
         money: 2,
         happiness: 0,
-        experience: 0
+        experience: expReward
     });
     
     // Trigger pet happiness animation in pet window

@@ -13,6 +13,7 @@ let isPetSick = false; // Track pet sickness state (starts healthy)
 let isPetDead = false; // Track pet death state
 let wasteCount = 0; // Track waste count for sickness chance calculation
 let isEggHatched = false; // Track if egg has hatched (stats don't decay until hatched)
+let hasEgg = false; // Track if player has purchased an egg (prevents buying more eggs)
 
 // Store stats even when stats window is closed
 let storedStats = {
@@ -183,10 +184,12 @@ function buildMenu() {
   const template = [
     {
       label: 'Actions',
+      enabled: isEggHatched, // Disable until pet is hatched
       submenu: [
         {
           label: isPetSleeping ? 'Wake Up' : 'Sleep',
           click: () => {
+            if (!isEggHatched) return; // Prevent action if pet not hatched
             if (isPetSleeping) {
               // Wake up pet
               if (petWindow && !petWindow.isDestroyed()) {
@@ -199,11 +202,12 @@ function buildMenu() {
               }
             }
           },
-          enabled: !isPetExercising // Disable sleep when exercising
+          enabled: isEggHatched && !isPetExercising // Disable sleep when exercising or pet not hatched
         },
         {
           label: isPetExercising ? 'Stop Exercising' : 'Exercise',
           click: () => {
+            if (!isEggHatched) return; // Prevent action if pet not hatched
             if (isPetExercising) {
               // Stop exercising
               if (petWindow && !petWindow.isDestroyed()) {
@@ -216,18 +220,21 @@ function buildMenu() {
               }
             }
           },
-          enabled: !isPetSleeping && !isPetDead // Disable exercise when sleeping or dead
+          enabled: isEggHatched && !isPetSleeping && !isPetDead // Disable exercise when sleeping, dead, or pet not hatched
         }
       ]
     },
     {
       label: 'Games',
+      enabled: isEggHatched, // Disable until pet is hatched
       submenu: [
         {
           label: 'Simon Says',
           click: () => {
+            if (!isEggHatched) return; // Prevent action if pet not hatched
             openSimonSaysWindow();
-          }
+          },
+          enabled: isEggHatched // Disable until pet is hatched
         }
       ]
     },
@@ -271,8 +278,8 @@ function openShopWindow() {
   // Send initial money to shop window when it's ready
   shopWindow.webContents.once('did-finish-load', () => {
     shopWindow.webContents.send('money:update', money);
-    // Send pet state to shop window (to disable egg button if pet exists)
-    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched });
+    // Send pet state to shop window (to disable egg button if pet exists or egg purchased)
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg });
   });
   
   shopWindow.on('closed', () => {
@@ -385,9 +392,9 @@ ipcMain.on('shop:buy', (_event, payload) => {
     return;
   }
   
-  // Prevent buying eggs if pet already exists
-  if (itemId === 'egg1' && isEggHatched) {
-    // Pet already exists - notify shop window
+  // Prevent buying eggs if player already has an egg (purchased or hatched)
+  if (itemId === 'egg1' && (hasEgg || isEggHatched)) {
+    // Egg already purchased or pet exists - notify shop window
     if (shopWindow && !shopWindow.isDestroyed()) {
       shopWindow.webContents.send('shop:purchaseFailed', { reason: 'pet_exists' });
     }
@@ -404,6 +411,15 @@ ipcMain.on('shop:buy', (_event, payload) => {
   
   // Deduct money
   money -= cost;
+  
+  // Track egg purchase
+  if (itemId === 'egg1') {
+    hasEgg = true;
+    // Notify shop window that egg was purchased
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg });
+    }
+  }
   
   // Send money update to all windows
   sendMoneyUpdate();
@@ -459,9 +475,11 @@ ipcMain.on('egg:hatched', () => {
   console.log('Egg has hatched! Stats decay will now start.');
   // Open name dialog window
   openNameDialog();
+  // Rebuild menu to enable Actions and Games
+  buildMenu();
   // Notify shop window that pet exists (disable egg button)
   if (shopWindow && !shopWindow.isDestroyed()) {
-    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: true });
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: true, hasEgg: hasEgg });
   }
 });
 
