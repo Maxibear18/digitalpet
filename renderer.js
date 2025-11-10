@@ -222,6 +222,19 @@ let currentMedkitEl = null; // Currently targeted medkit item
 
 // Toy items
 let toyItems = []; // Array of all purchased toys
+let isPuddingActive = false; // Track if pudding effect is active
+let puddingTimerId = null; // Timer ID for pudding expiration
+let isBubbleWandActive = false; // Track if bubble wand effect is active
+let bubbleWandTimerId = null; // Timer ID for bubble wand expiration
+let isChimesActive = false; // Track if chimes effect is active
+let chimesTimerId = null; // Timer ID for chimes expiration
+let isCalculatorActive = false; // Track if calculator effect is active
+let calculatorTimerId = null; // Timer ID for calculator expiration
+let isMusicPlayerActive = false; // Track if music player effect is active
+let musicPlayerTimerId = null; // Timer ID for music player expiration
+let musicPlayerHealIntervalId = null; // Interval ID for music player healing
+let isPaddleActive = false; // Track if paddle effect is active
+let paddleTimerId = null; // Timer ID for paddle expiration
 
 // Petting mechanic
 let petClickCount = 0; // Track number of clicks for petting
@@ -581,7 +594,26 @@ window.addEventListener('load', () => {
                 moveToNearestFood();
             }
         } else if (key === 'rest') {
+            const oldRest = rest;
             rest = value;
+            
+            // Apply chimes bonus if rest increased and chimes is active
+            if (isChimesActive && value > oldRest) {
+                const restIncrease = value - oldRest;
+                const bonus = restIncrease * 0.3;
+                const bonusAmount = Math.ceil(bonus);
+                const newRest = Math.min(REST_MAX, rest + bonusAmount);
+                
+                if (bonusAmount > 0) {
+                    rest = newRest;
+                    console.log(`Chimes bonus applied! Rest increase: ${restIncrease} -> ${restIncrease + bonusAmount} (+${bonusAmount})`);
+                    // Update stat bar and notify main process
+                    updateStatBar('rest', rest, REST_MAX);
+                    try {
+                        ipcRenderer.send('stats:update', { key: 'rest', value: rest, max: REST_MAX });
+                    } catch (_) {}
+                }
+            }
         } else if (key === 'happiness') {
             happiness = value;
         } else if (key === 'health') {
@@ -1095,6 +1127,235 @@ function spawnToy(imagePath, toyId, toyCost) {
     // Update positions of all toys to ensure proper stacking
     // This will position the new toy correctly based on its index
     updateToyPositions();
+    
+    // Special handling for each toy: activate effect and set timer
+    if (toyId === 'pudding') {
+        activatePuddingEffect(item);
+    } else if (toyId === 'bubblewand') {
+        activateBubbleWandEffect(item);
+    } else if (toyId === 'chimes') {
+        activateChimesEffect(item);
+    } else if (toyId === 'calculator') {
+        activateCalculatorEffect(item);
+    } else if (toyId === 'musicplayer') {
+        activateMusicPlayerEffect(item);
+    } else if (toyId === 'paddle') {
+        activatePaddleEffect(item);
+    }
+}
+
+// Activate pudding effect and set timer
+function activatePuddingEffect(puddingItem) {
+    // Activate pudding effect
+    isPuddingActive = true;
+    
+    // Clear any existing timer
+    if (puddingTimerId) {
+        clearTimeout(puddingTimerId);
+    }
+    
+    // Set timer for 25 minutes (1500000 ms)
+    const PUDDING_DURATION = 1500000; // 25 minutes
+    puddingTimerId = setTimeout(() => {
+        deactivatePuddingEffect(puddingItem);
+    }, PUDDING_DURATION);
+    
+    console.log('Pudding effect activated! Hunger increases will be boosted by 30% for 25 minutes.');
+}
+
+// Deactivate pudding effect and remove icon
+function deactivatePuddingEffect(puddingItem) {
+    // Deactivate pudding effect
+    isPuddingActive = false;
+    puddingTimerId = null;
+    
+    // Remove pudding from toy items array
+    toyItems = toyItems.filter(toy => toy !== puddingItem);
+    
+    // Remove pudding icon from DOM
+    if (puddingItem && puddingItem.parentNode) {
+        puddingItem.parentNode.removeChild(puddingItem);
+    }
+    
+    // Update positions of remaining toys
+    updateToyPositions();
+    
+    console.log('Pudding effect expired. Icon removed.');
+}
+
+// Activate bubble wand effect and set timer
+function activateBubbleWandEffect(bubbleWandItem) {
+    isBubbleWandActive = true;
+    
+    if (bubbleWandTimerId) {
+        clearTimeout(bubbleWandTimerId);
+    }
+    
+    const BUBBLE_WAND_DURATION = 1500000; // 25 minutes
+    bubbleWandTimerId = setTimeout(() => {
+        deactivateBubbleWandEffect(bubbleWandItem);
+    }, BUBBLE_WAND_DURATION);
+    
+    console.log('Bubble Wand effect activated! Happiness increases will be boosted by 30% for 25 minutes.');
+}
+
+// Deactivate bubble wand effect and remove icon
+function deactivateBubbleWandEffect(bubbleWandItem) {
+    isBubbleWandActive = false;
+    bubbleWandTimerId = null;
+    
+    toyItems = toyItems.filter(toy => toy !== bubbleWandItem);
+    
+    if (bubbleWandItem && bubbleWandItem.parentNode) {
+        bubbleWandItem.parentNode.removeChild(bubbleWandItem);
+    }
+    
+    updateToyPositions();
+    console.log('Bubble Wand effect expired. Icon removed.');
+}
+
+// Activate chimes effect and set timer
+function activateChimesEffect(chimesItem) {
+    isChimesActive = true;
+    
+    if (chimesTimerId) {
+        clearTimeout(chimesTimerId);
+    }
+    
+    const CHIMES_DURATION = 1500000; // 25 minutes
+    chimesTimerId = setTimeout(() => {
+        deactivateChimesEffect(chimesItem);
+    }, CHIMES_DURATION);
+    
+    console.log('Chimes effect activated! Rest increases will be boosted by 30% for 25 minutes.');
+}
+
+// Deactivate chimes effect and remove icon
+function deactivateChimesEffect(chimesItem) {
+    isChimesActive = false;
+    chimesTimerId = null;
+    
+    toyItems = toyItems.filter(toy => toy !== chimesItem);
+    
+    if (chimesItem && chimesItem.parentNode) {
+        chimesItem.parentNode.removeChild(chimesItem);
+    }
+    
+    updateToyPositions();
+    console.log('Chimes effect expired. Icon removed.');
+}
+
+// Activate calculator effect and set timer
+function activateCalculatorEffect(calculatorItem) {
+    isCalculatorActive = true;
+    
+    if (calculatorTimerId) {
+        clearTimeout(calculatorTimerId);
+    }
+    
+    const CALCULATOR_DURATION = 1500000; // 25 minutes
+    calculatorTimerId = setTimeout(() => {
+        deactivateCalculatorEffect(calculatorItem);
+    }, CALCULATOR_DURATION);
+    
+    console.log('Calculator effect activated! Money from minigames will be boosted by 30% for 25 minutes.');
+}
+
+// Deactivate calculator effect and remove icon
+function deactivateCalculatorEffect(calculatorItem) {
+    isCalculatorActive = false;
+    calculatorTimerId = null;
+    
+    toyItems = toyItems.filter(toy => toy !== calculatorItem);
+    
+    if (calculatorItem && calculatorItem.parentNode) {
+        calculatorItem.parentNode.removeChild(calculatorItem);
+    }
+    
+    updateToyPositions();
+    console.log('Calculator effect expired. Icon removed.');
+}
+
+// Activate music player effect and set timer
+function activateMusicPlayerEffect(musicPlayerItem) {
+    isMusicPlayerActive = true;
+    
+    if (musicPlayerTimerId) {
+        clearTimeout(musicPlayerTimerId);
+    }
+    
+    // Clear any existing heal interval
+    if (musicPlayerHealIntervalId) {
+        clearInterval(musicPlayerHealIntervalId);
+    }
+    
+    const MUSIC_PLAYER_DURATION = 900000; // 15 minutes
+    musicPlayerTimerId = setTimeout(() => {
+        deactivateMusicPlayerEffect(musicPlayerItem);
+    }, MUSIC_PLAYER_DURATION);
+    
+    // Start healing interval: +2 health every 45 seconds
+    const HEAL_INTERVAL = 45000; // 45 seconds
+    musicPlayerHealIntervalId = setInterval(() => {
+        if (isMusicPlayerActive && !isDead) {
+            setHealth(health + 2);
+            console.log('Music Player healed +2 health!');
+        }
+    }, HEAL_INTERVAL);
+    
+    console.log('Music Player effect activated! Will heal +2 health every 45 seconds for 15 minutes.');
+}
+
+// Deactivate music player effect and remove icon
+function deactivateMusicPlayerEffect(musicPlayerItem) {
+    isMusicPlayerActive = false;
+    musicPlayerTimerId = null;
+    
+    // Stop healing interval
+    if (musicPlayerHealIntervalId) {
+        clearInterval(musicPlayerHealIntervalId);
+        musicPlayerHealIntervalId = null;
+    }
+    
+    toyItems = toyItems.filter(toy => toy !== musicPlayerItem);
+    
+    if (musicPlayerItem && musicPlayerItem.parentNode) {
+        musicPlayerItem.parentNode.removeChild(musicPlayerItem);
+    }
+    
+    updateToyPositions();
+    console.log('Music Player effect expired. Icon removed.');
+}
+
+// Activate paddle effect and set timer
+function activatePaddleEffect(paddleItem) {
+    isPaddleActive = true;
+    
+    if (paddleTimerId) {
+        clearTimeout(paddleTimerId);
+    }
+    
+    const PADDLE_DURATION = 900000; // 15 minutes
+    paddleTimerId = setTimeout(() => {
+        deactivatePaddleEffect(paddleItem);
+    }, PADDLE_DURATION);
+    
+    console.log('Paddle effect activated! Experience gains will be boosted by 30% for 15 minutes.');
+}
+
+// Deactivate paddle effect and remove icon
+function deactivatePaddleEffect(paddleItem) {
+    isPaddleActive = false;
+    paddleTimerId = null;
+    
+    toyItems = toyItems.filter(toy => toy !== paddleItem);
+    
+    if (paddleItem && paddleItem.parentNode) {
+        paddleItem.parentNode.removeChild(paddleItem);
+    }
+    
+    updateToyPositions();
+    console.log('Paddle effect expired. Icon removed.');
 }
 
 // Update positions of all toys to ensure proper stacking
@@ -2048,19 +2309,55 @@ function finishEating() {
     if (foodData) {
         // Increase hunger
         if (foodData.hunger > 0) {
-            setHunger(hunger + foodData.hunger);
+            let hungerIncrease = foodData.hunger;
+            
+            // Apply pudding bonus if active (30% increase, rounded up)
+            if (isPuddingActive) {
+                const bonus = hungerIncrease * 0.3;
+                hungerIncrease = hungerIncrease + Math.ceil(bonus);
+                console.log(`Pudding bonus applied! Hunger increase: ${foodData.hunger} -> ${hungerIncrease} (+${Math.ceil(bonus)})`);
+            }
+            
+            setHunger(hunger + hungerIncrease);
         }
         // Increase happiness
         if (foodData.happiness > 0) {
-            setHappiness(happiness + foodData.happiness);
+            let happinessIncrease = foodData.happiness;
+            
+            // Apply bubble wand bonus if active (30% increase, rounded up)
+            if (isBubbleWandActive) {
+                const bonus = happinessIncrease * 0.3;
+                happinessIncrease = happinessIncrease + Math.ceil(bonus);
+                console.log(`Bubble Wand bonus applied! Happiness increase: ${foodData.happiness} -> ${happinessIncrease} (+${Math.ceil(bonus)})`);
+            }
+            
+            setHappiness(happiness + happinessIncrease);
         }
         // Increase rest
         if (foodData.rest > 0) {
-            setRest(rest + foodData.rest);
+            let restIncrease = foodData.rest;
+            
+            // Apply chimes bonus if active (30% increase, rounded up)
+            if (isChimesActive) {
+                const bonus = restIncrease * 0.3;
+                restIncrease = restIncrease + Math.ceil(bonus);
+                console.log(`Chimes bonus applied! Rest increase: ${foodData.rest} -> ${restIncrease} (+${Math.ceil(bonus)})`);
+            }
+            
+            setRest(rest + restIncrease);
         }
     } else {
         // Fallback: default hunger increase (for backwards compatibility)
-        setHunger(hunger + 5);
+        let hungerIncrease = 5;
+        
+        // Apply pudding bonus if active (30% increase, rounded up)
+        if (isPuddingActive) {
+            const bonus = hungerIncrease * 0.3;
+            hungerIncrease = hungerIncrease + Math.ceil(bonus);
+            console.log(`Pudding bonus applied! Hunger increase: 5 -> ${hungerIncrease} (+${Math.ceil(bonus)})`);
+        }
+        
+        setHunger(hunger + hungerIncrease);
     }
     
     // Gain experience from eating
@@ -2396,8 +2693,17 @@ function cureSickness() {
 function addExperience(amount) {
     if (isDead || isEvolving) return; // Can't gain experience when dead or evolving
     
+    let experienceGain = amount;
+    
+    // Apply paddle bonus if active (30% increase, rounded up)
+    if (isPaddleActive) {
+        const bonus = experienceGain * 0.3;
+        experienceGain = experienceGain + Math.ceil(bonus);
+        console.log(`Paddle bonus applied! Experience gain: ${amount} -> ${experienceGain} (+${Math.ceil(bonus)})`);
+    }
+    
     const oldExperience = experience;
-    experience = Math.min(EXPERIENCE_MAX, experience + amount);
+    experience = Math.min(EXPERIENCE_MAX, experience + experienceGain);
     
     // Notify main process to store experience
     try {
@@ -2587,7 +2893,16 @@ function handlePetClick() {
     // Check if we've reached 5 clicks
     if (petClickCount >= PETS_FOR_HAPPINESS) {
         // Increase happiness by 1
-        setHappiness(happiness + 1);
+        let happinessIncrease = 1;
+        
+        // Apply bubble wand bonus if active (30% increase, rounded up)
+        if (isBubbleWandActive) {
+            const bonus = happinessIncrease * 0.3;
+            happinessIncrease = happinessIncrease + Math.ceil(bonus);
+            console.log(`Bubble Wand bonus applied! Happiness increase: 1 -> ${happinessIncrease} (+${Math.ceil(bonus)})`);
+        }
+        
+        setHappiness(happiness + happinessIncrease);
         // Reset click counter
         petClickCount = 0;
     }
