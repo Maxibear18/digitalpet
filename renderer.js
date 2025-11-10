@@ -9,38 +9,38 @@ const { ipcRenderer } = require('electron');
 const PET_TYPES = {
     botamon: {
         name: 'Botamon',
-        walk: ['sprites/botamon.png', 'sprites/botamon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/botamon.png', 'sprites/botamon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/botamon 4.png', // Sprite 4
+        walk: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/botamon/botamon 4.png', // Sprite 4
         canEvolve: true, // Only Botamon can evolve
         evolution: 'koromon' // Evolves into Koromon
     },
     poyomon: {
         name: 'Poyomon',
-        walk: ['sprites/poyomon.png', 'sprites/poyomon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/poyomon.png', 'sprites/poyomon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/poyomon 4.png', // Sprite 4
+        walk: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/poyomon/poyomon 4.png', // Sprite 4
         canEvolve: false
     },
     punimon: {
         name: 'Punimon',
-        walk: ['sprites/punimon.png', 'sprites/punimon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/punimon.png', 'sprites/punimon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/punimon 4.png', // Sprite 4
+        walk: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/punimon/punimon 4.png', // Sprite 4
         canEvolve: false
     },
     pitchmon: {
         name: 'Pitchmon',
-        walk: ['sprites/pitchmon.png', 'sprites/pitchmon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/pitchmon.png', 'sprites/pitchmon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/pitchmon 4.png', // Sprite 4
+        walk: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/pitchmon/pitchmon 4.png', // Sprite 4
         canEvolve: false
     },
     koromon: {
         name: 'Koromon',
-        walk: ['sprites/koromon.png', 'sprites/koromon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/koromon.png', 'sprites/koromon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/koromon 4.png', // Sprite 4
+        walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'], // Sprite 1 and 2
+        happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'], // Sprite 1 and 3
+        sleep: 'sprites/koromon/koromon 4.png', // Sprite 4
         canEvolve: false // Koromon is evolved form, doesn't evolve further
     }
 };
@@ -2603,7 +2603,7 @@ function stopSleeping() {
 
 // Waste spawning system
 const WASTE_SPAWN_INTERVAL = 180000; // 3 minutes in milliseconds
-const wasteSpritePath = 'sprites/waste.png';
+const wasteSpritePath = 'sprites/items/waste.png';
 
 // Start waste spawning system - pet leaves waste every 3 minutes
 function startWasteSpawning() {

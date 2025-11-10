@@ -118,13 +118,13 @@ window.addEventListener('DOMContentLoaded', () => {
                 ipcRenderer.send('shop:buy', {
                     type: 'medicine',
                     id: 'medicine1',
-                    imagePath: 'sprites/pill.png'
+                    imagePath: 'sprites/items/pill.png'
                 });
             } else if (item === 'medkit1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'medkit',
                     id: 'medkit1',
-                    imagePath: 'sprites/medkit.png'
+                    imagePath: 'sprites/items/medkit.png'
                 });
             } else if (item === 'egg1') {
                 // Check if pet already exists
