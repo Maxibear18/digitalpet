@@ -23,10 +23,10 @@ const helpCloseBtn = document.getElementById('helpCloseBtn');
 // Card images - mix of pets and food
 const CARD_IMAGES = [
     // Pet sprites
-    { type: 'pet', path: 'sprites/botamon/botamon.png', id: 'botamon' },
-    { type: 'pet', path: 'sprites/poyomon/poyomon.png', id: 'poyomon' },
-    { type: 'pet', path: 'sprites/punimon/punimon.png', id: 'punimon' },
-    { type: 'pet', path: 'sprites/pitchmon/pitchmon.png', id: 'pitchmon' },
+    { type: 'pet', path: 'sprites/basic pets/botamon/botamon.png', id: 'botamon' },
+    { type: 'pet', path: 'sprites/basic pets/poyomon/poyomon.png', id: 'poyomon' },
+    { type: 'pet', path: 'sprites/basic pets/punimon/punimon.png', id: 'punimon' },
+    { type: 'pet', path: 'sprites/basic pets/pitchmon/pitchmon.png', id: 'pitchmon' },
     // Food sprites
     { type: 'food', path: 'sprites/food/cherry.png', id: 'cherry' },
     { type: 'food', path: 'sprites/food/riceball.png', id: 'riceball' },
@@ -91,8 +91,8 @@ function renderCards() {
         
         const back = document.createElement('div');
         back.className = 'memory-card-back';
-        const img = document.createElement('img');
-        img.src = card.path;
+    const img = document.createElement('img');
+    img.src = encodeURI(card.path);
         img.alt = card.id;
         back.appendChild(img);
         

@@ -56,111 +56,146 @@ const FOOD_TYPES = {
 const PET_TYPES = {
     botamon: {
         name: 'Botamon',
-        walk: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/botamon/botamon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/botamon/botamon.png', 'sprites/basic pets/botamon/botamon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/botamon/botamon.png', 'sprites/basic pets/botamon/botamon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/botamon/botamon 4.png', // Sprite 4
 		canEvolve: true,
         evolution: 'koromon' // Evolves into Koromon
     },
     poyomon: {
         name: 'Poyomon',
-        walk: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/poyomon/poyomon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/poyomon/poyomon.png', 'sprites/basic pets/poyomon/poyomon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/poyomon/poyomon.png', 'sprites/basic pets/poyomon/poyomon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/poyomon/poyomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'tokomon'
     },
     punimon: {
         name: 'Punimon',
-        walk: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/punimon/punimon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/punimon/punimon.png', 'sprites/basic pets/punimon/punimon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/punimon/punimon.png', 'sprites/basic pets/punimon/punimon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/punimon/punimon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'tsunomon'
     },
     pitchmon: {
         name: 'Pitchmon',
-        walk: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/pitchmon/pitchmon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/pitchmon/pitchmon.png', 'sprites/basic pets/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/pitchmon/pitchmon.png', 'sprites/basic pets/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/pitchmon/pitchmon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'pakumon'
     },
     koromon: {
         name: 'Koromon',
-        walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'], // Sprite 1 and 2
-        happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'], // Sprite 1 and 3
-        sleep: 'sprites/koromon/koromon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/koromon/koromon.png', 'sprites/basic pets/koromon/koromon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/koromon/koromon.png', 'sprites/basic pets/koromon/koromon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/koromon/koromon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'agumon'
 	},
 	tokomon: {
 		name: 'Tokomon',
-		walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/tokomon/tokomon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/tokomon/tokomon.png', 'sprites/basic pets/tokomon/tokomon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/tokomon/tokomon.png', 'sprites/basic pets/tokomon/tokomon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/tokomon/tokomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'patamon'
 	},
 	tsunomon: {
 		name: 'Tsunomon',
-		walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/tsunomon/tsunomon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/tsunomon/tsunomon.png', 'sprites/basic pets/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/tsunomon/tsunomon.png', 'sprites/basic pets/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/tsunomon/tsunomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'gabumon'
 	},
 	pakumon: {
 		name: 'Pakumon',
-		walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/pakumon/pakumon 4.png', // Sprite 4
+		walk: ['sprites/basic pets/pakumon/pakumon.png', 'sprites/basic pets/pakumon/pakumon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/basic pets/pakumon/pakumon.png', 'sprites/basic pets/pakumon/pakumon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/basic pets/pakumon/pakumon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'betamon'
 	},
 	agumon: {
 		name: 'Agumon',
-		walk: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 2.png'],
-		happiness: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 3.png'],
-		sleep: 'sprites/agumon/agumon 4.png',
-		canEvolve: false
+		walk: ['sprites/basic pets/agumon/agumon.png', 'sprites/basic pets/agumon/agumon 2.png'],
+		happiness: ['sprites/basic pets/agumon/agumon.png', 'sprites/basic pets/agumon/agumon 3.png'],
+		sleep: 'sprites/basic pets/agumon/agumon 4.png',
+		canEvolve: true,
+		evolution: 'greymon'
 	},
 	betamon: {
 		name: 'Betamon',
-		walk: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 2.png'],
-		happiness: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 3.png'],
-		sleep: 'sprites/betamon/betamon 4.png',
-		canEvolve: false
+		walk: ['sprites/basic pets/betamon/betamon.png', 'sprites/basic pets/betamon/betamon 2.png'],
+		happiness: ['sprites/basic pets/betamon/betamon.png', 'sprites/basic pets/betamon/betamon 3.png'],
+		sleep: 'sprites/basic pets/betamon/betamon 4.png',
+		canEvolve: true,
+		evolution: 'seadramon'
 	},
 	gabumon: {
 		name: 'Gabumon',
-		walk: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 2.png'],
-		happiness: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 3.png'],
-		sleep: 'sprites/gabumon/gabumon 4.png',
-		canEvolve: false
+		walk: ['sprites/basic pets/gabumon/gabumon.png', 'sprites/basic pets/gabumon/gabumon 2.png'],
+		happiness: ['sprites/basic pets/gabumon/gabumon.png', 'sprites/basic pets/gabumon/gabumon 3.png'],
+		sleep: 'sprites/basic pets/gabumon/gabumon 4.png',
+		canEvolve: true,
+		evolution: 'garurumon'
 	},
 	patamon: {
 		name: 'Patamon',
-		walk: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 2.png'],
-		happiness: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 3.png'],
-		sleep: 'sprites/patamon/patamon 4.png',
+		walk: ['sprites/basic pets/patamon/patamon.png', 'sprites/basic pets/patamon/patamon 2.png'],
+		happiness: ['sprites/basic pets/patamon/patamon.png', 'sprites/basic pets/patamon/patamon 3.png'],
+		sleep: 'sprites/basic pets/patamon/patamon 4.png',
+		canEvolve: true,
+		evolution: 'angemon'
+	},
+	greymon: {
+		name: 'Greymon',
+		walk: ['sprites/basic pets/greymon/greymon.png', 'sprites/basic pets/greymon/greymon 2.png'],
+		happiness: ['sprites/basic pets/greymon/greymon.png', 'sprites/basic pets/greymon/greymon 3.png'],
+		sleep: 'sprites/basic pets/greymon/greymon 4.png',
+		canEvolve: false
+	},
+	garurumon: {
+		name: 'Garurumon',
+		walk: ['sprites/basic pets/garurumon/garurumon.png', 'sprites/basic pets/garurumon/garurumon 2.png'],
+		happiness: ['sprites/basic pets/garurumon/garurumon.png', 'sprites/basic pets/garurumon/garurumon 3.png'],
+		sleep: 'sprites/basic pets/garurumon/garurumon 4.png',
+		canEvolve: false
+	},
+	angemon: {
+		name: 'Angemon',
+		walk: ['sprites/basic pets/angemon/angemon.png', 'sprites/basic pets/angemon/angemon 2.png'],
+		happiness: ['sprites/basic pets/angemon/angemon.png', 'sprites/basic pets/angemon/angemon 3.png'],
+		sleep: 'sprites/basic pets/angemon/angemon 4.png',
+		canEvolve: false
+	},
+	seadramon: {
+		name: 'Seadramon',
+		walk: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 2.png'],
+		happiness: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 3.png'],
+		sleep: 'sprites/basic pets/seadramon/seadramon 4.png',
 		canEvolve: false
     }
 };
 
 // Current pet state
 let currentPetType = 'botamon'; // Default pet type (will be set on hatching)
-let currentEvolutionStage = 1; // 1 = base, 2 = first evolution, 3 = second evolution
+let currentEvolutionStage = 1; // 1 = base, 2 = first, 3 = second, 4 = third evolution
 
 // Resolve the type key for a given stage in the evolution chain
 function getResolvedTypeForStage(typeKey, stage) {
 	if (!PET_TYPES[typeKey]) return 'botamon';
-	if (stage <= 1) return typeKey;
-	const first = PET_TYPES[typeKey].evolution && PET_TYPES[PET_TYPES[typeKey].evolution] ? PET_TYPES[typeKey].evolution : null;
-	if (stage === 2) return first || typeKey;
-	if (!first) return typeKey;
-	const second = PET_TYPES[first].evolution && PET_TYPES[PET_TYPES[first].evolution] ? PET_TYPES[first].evolution : null;
-	return second || first;
+	let resolved = typeKey;
+	for (let s = 2; s <= stage; s++) {
+		const next = PET_TYPES[resolved] && PET_TYPES[resolved].evolution && PET_TYPES[PET_TYPES[resolved].evolution]
+			? PET_TYPES[resolved].evolution
+			: null;
+		if (!next) break;
+		resolved = next;
+	}
+	return resolved;
 }
 
 // Get current pet data based on pet type and evolution stage
@@ -2831,8 +2866,8 @@ function evolvePet() {
 		return;
 	}
 
-	// Check if already at max evolution stage (cap at 3)
-	if (currentEvolutionStage >= 3) {
+	// Check if already at max evolution stage (cap at 4)
+	if (currentEvolutionStage >= 4) {
 		console.log('Pet is already at max evolution!');
 		return;
 	}
@@ -2892,10 +2927,9 @@ function evolvePet() {
 		// Evolve to next stage
         currentEvolutionStage = nextStage;
 
-		// Update next experience threshold after first evolution
-		if (currentEvolutionStage === 2) {
-			EXPERIENCE_MAX = 450;
-		}
+		// Update next experience threshold
+		if (currentEvolutionStage === 2) EXPERIENCE_MAX = 450;
+		else if (currentEvolutionStage === 3) EXPERIENCE_MAX = 650;
 
 		// Log new form name
 		const newResolvedType = getResolvedTypeForStage(currentPetType, currentEvolutionStage);
