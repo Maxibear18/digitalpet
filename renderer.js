@@ -524,6 +524,19 @@ window.addEventListener('load', () => {
         }
     });
 
+    // React to pet state changes (e.g., after selling) to hide or show pet
+    ipcRenderer.on('pet:stateUpdate', (_event, data) => {
+        if (typeof data?.isEggHatched === 'boolean') {
+            isEggHatched = data.isEggHatched;
+        }
+        if (typeof data?.hasEgg === 'boolean') {
+            hasEgg = data.hasEgg;
+        }
+        if (!isEggHatched && !hasEgg) {
+            hidePet();
+        }
+    });
+
     // Handle spawning items from the Shop
     ipcRenderer.on('shop:spawnItem', (_event, payload) => {
         if (!payload || !payload.imagePath) return;

@@ -3,6 +3,8 @@ const { ipcRenderer } = require('electron');
 let currentMoney = 1500; // Will be updated from main process
 let hasPet = false; // Track if pet exists (egg hatched)
 let hasEgg = false; // Track if player has purchased an egg
+let shopPetType = 'botamon';
+let shopEvolutionStage = 1;
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -23,8 +25,106 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => setActive(tab.dataset.tab));
+        tab.addEventListener('click', () => {
+            // Prevent opening Sell tab if no pet
+            if (tab.dataset.tab === 'sell' && !hasPet) return;
+            setActive(tab.dataset.tab);
+        });
     });
+
+    // Sell tab elements
+    const sellBtn = document.getElementById('sellBtn');
+    const sellPriceEl = document.getElementById('sellPrice');
+    const sellPetSprite = document.getElementById('sellPetSprite');
+
+    function calcSellPrice(stage) {
+        const base = 250;
+        const multiplier = 1 + 0.2 * stage; // stage 1 = 1.2, stage 2 = 1.4, etc.
+        return Math.floor(base * multiplier);
+    }
+
+    function getSellSpriteFor(typeKey, stage) {
+        // Map minimal walk sprites for preview
+        const base = 'sprites/basic pets';
+        const MAP = {
+            botamon: [`${base}/botamon/botamon.png`],
+            poyomon: [`${base}/poyomon/poyomon.png`],
+            punimon: [`${base}/punimon/punimon.png`],
+            pitchmon: [`${base}/pitchmon/pitchmon.png`],
+            koromon: [`${base}/koromon/koromon.png`],
+            tokomon: [`${base}/tokomon/tokomon.png`],
+            tsunomon: [`${base}/tsunomon/tsunomon.png`],
+            pakumon: [`${base}/pakumon/pakumon.png`],
+            agumon: [`${base}/agumon/agumon.png`],
+            betamon: [`${base}/betamon/betamon.png`],
+            gabumon: [`${base}/gabumon/gabumon.png`],
+            patamon: [`${base}/patamon/patamon.png`],
+            greymon: [`${base}/greymon/greymon.png`],
+            garurumon: [`${base}/garurumon/garurumon.png`],
+            angemon: [`${base}/angemon/angemon.png`],
+            seadramon: [`${base}/seadramon/seadramon.png`]
+        };
+        // Resolve evolved type by stage (same logic as games: follow evolution chain)
+        const EVOLVE = {
+            botamon: 'koromon',
+            poyomon: 'tokomon',
+            punimon: 'tsunomon',
+            pitchmon: 'pakumon',
+            koromon: 'agumon',
+            tokomon: 'patamon',
+            tsunomon: 'gabumon',
+            pakumon: 'betamon',
+            agumon: 'greymon',
+            betamon: 'seadramon',
+            gabumon: 'garurumon',
+            patamon: 'angemon'
+        };
+        let resolved = typeKey;
+        for (let s = 2; s <= stage; s++) {
+            const next = EVOLVE[resolved];
+            if (!next) break;
+            resolved = next;
+        }
+        const arr = MAP[resolved] || MAP.botamon;
+        return encodeURI(arr[0]);
+    }
+
+    function refreshSellPanel() {
+        // Disable sell if no pet
+        if (!hasPet) {
+            // Visually disable Sell tab
+            const sellTab = tabs.find(t => t.dataset.tab === 'sell');
+            if (sellTab) {
+                sellTab.setAttribute('aria-disabled', 'true');
+                sellTab.style.opacity = '0.5';
+                sellTab.style.cursor = 'not-allowed';
+            }
+            if (sellBtn) sellBtn.disabled = true;
+            if (sellPriceEl) sellPriceEl.textContent = '$0';
+            if (sellPetSprite) sellPetSprite.src = '';
+            return;
+        }
+        const sellTab = tabs.find(t => t.dataset.tab === 'sell');
+        if (sellTab) {
+            sellTab.removeAttribute('aria-disabled');
+            sellTab.style.opacity = '1';
+            sellTab.style.cursor = 'pointer';
+        }
+        const price = calcSellPrice(shopEvolutionStage);
+        if (sellPriceEl) sellPriceEl.textContent = `$${price}`;
+        if (sellPetSprite) sellPetSprite.src = getSellSpriteFor(shopPetType, shopEvolutionStage);
+        if (sellBtn) sellBtn.disabled = false;
+    }
+
+    if (sellBtn) {
+        sellBtn.addEventListener('click', () => {
+            if (!hasPet) return;
+            const price = calcSellPrice(shopEvolutionStage);
+            const ok = confirm(`Are you sure you want to sell your pet for $${price}? This cannot be undone.`);
+            if (!ok) return;
+            ipcRenderer.send('shop:sellPet', { price });
+        });
+    }
 
     // Listen for money updates
     ipcRenderer.on('money:update', (_event, amount) => {
@@ -47,6 +147,17 @@ window.addEventListener('DOMContentLoaded', () => {
         hasPet = data.isEggHatched || false;
         hasEgg = data.hasEgg || false;
         updateEggButton();
+        // If provided, update pet type and evolution stage
+        if (typeof data.petType === 'string') shopPetType = data.petType;
+        if (typeof data.evolutionStage === 'number') shopEvolutionStage = data.evolutionStage;
+        refreshSellPanel();
+    });
+
+    // Receive pet type and evolution stage for sell tab
+    ipcRenderer.on('shop:petType', (_event, petType, evolutionStage) => {
+        if (typeof petType === 'string') shopPetType = petType;
+        if (typeof evolutionStage === 'number') shopEvolutionStage = evolutionStage;
+        refreshSellPanel();
     });
 
     // Update buy button states based on money
@@ -239,9 +350,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Initial update
     updateBuyButtons();
+    refreshSellPanel();
     
     // Request current money from main process
     ipcRenderer.send('money:request');
+    // Request current pet type/stage
+    ipcRenderer.send('shop:requestPetType');
 });
 
 // Listen for money request response

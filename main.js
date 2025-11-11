@@ -295,7 +295,8 @@ function openShopWindow() {
   shopWindow.webContents.once('did-finish-load', () => {
     shopWindow.webContents.send('money:update', money);
     // Send pet state to shop window (to disable egg button if pet exists or egg purchased)
-    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg });
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg, petType: currentPetType, evolutionStage: currentEvolutionStage });
+    shopWindow.webContents.send('shop:petType', currentPetType, currentEvolutionStage);
   });
   
   shopWindow.on('closed', () => {
@@ -674,6 +675,11 @@ ipcMain.on('pet:death', (_event, dead) => {
 ipcMain.on('pet:evolved', (_event, stage) => {
   currentEvolutionStage = stage;
   console.log(`Pet evolved to stage ${stage}!`);
+  // Notify shop window to refresh sell preview and price
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('shop:petType', currentPetType, currentEvolutionStage);
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg, petType: currentPetType, evolutionStage: currentEvolutionStage });
+  }
 });
 
 // Handle pet type update (when egg hatches)
@@ -824,6 +830,65 @@ function openReactionTimeWindow() {
   });
 }
 
+// Provide pet type to shop window on request
+ipcMain.on('shop:requestPetType', (event) => {
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('shop:petType', currentPetType, currentEvolutionStage);
+  } else {
+    event.reply('shop:petType', currentPetType, currentEvolutionStage);
+  }
+});
+
+// Handle selling pet
+ipcMain.on('shop:sellPet', (_event, payload) => {
+  const price = typeof payload?.price === 'number' ? payload.price : 0;
+  // Increase money
+  money += price;
+  // Reset pet flags
+  hasEgg = false;
+  isEggHatched = false;
+  // Reset evolution stage and set default type
+  currentEvolutionStage = 1;
+  currentPetType = 'botamon';
+  // Reset stored stats to defaults
+  const defaults = {
+    hunger: { value: 50, max: 100 },
+    rest: { value: 50, max: 100 },
+    health: { value: 50, max: 100 },
+    happiness: { value: 50, max: 100 },
+    experience: { value: 0, max: 300 }
+  };
+  Object.keys(defaults).forEach(key => {
+    storedStats[key] = defaults[key];
+  });
+  // Notify windows of updates
+  if (petWindow && !petWindow.isDestroyed()) {
+    // Update money immediately in pet window
+    petWindow.webContents.send('money:update', money);
+    // Update stats in pet window
+    Object.keys(defaults).forEach(key => {
+      petWindow.webContents.send('stats:update', { key, value: defaults[key].value, max: defaults[key].max });
+    });
+    // Notify pet window to hide pet until egg is purchased again
+    petWindow.webContents.send('pet:stateUpdate', { isEggHatched: false, hasEgg: false });
+    // Also reset evolution stage/type
+    petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+    petWindow.webContents.send('pet:typeUpdate', currentPetType);
+  }
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('money:update', money);
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: false, hasEgg: false, petType: currentPetType, evolutionStage: currentEvolutionStage });
+    // Close the shop after selling
+    try { shopWindow.close(); } catch (_) {}
+  }
+  if (statsWindow && !statsWindow.isDestroyed()) {
+    Object.keys(defaults).forEach(key => {
+      if (key !== 'experience') {
+        statsWindow.webContents.send('stats:update', { key, value: defaults[key].value, max: defaults[key].max });
+      }
+    });
+  }
+});
 // Handle game rewards
 ipcMain.on('game:reward', (_event, rewards) => {
   // rewards should be an object with: { money, happiness, experience, hunger, rest }
