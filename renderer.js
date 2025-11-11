@@ -59,7 +59,7 @@ const PET_TYPES = {
         walk: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 2.png'], // Sprite 1 and 2
         happiness: ['sprites/botamon/botamon.png', 'sprites/botamon/botamon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/botamon/botamon 4.png', // Sprite 4
-        canEvolve: true, // Only Botamon can evolve
+		canEvolve: true,
         evolution: 'koromon' // Evolves into Koromon
     },
     poyomon: {
@@ -67,21 +67,24 @@ const PET_TYPES = {
         walk: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 2.png'], // Sprite 1 and 2
         happiness: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/poyomon/poyomon 4.png', // Sprite 4
-        canEvolve: false
+		canEvolve: true,
+		evolution: 'tokomon'
     },
     punimon: {
         name: 'Punimon',
         walk: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 2.png'], // Sprite 1 and 2
         happiness: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/punimon/punimon 4.png', // Sprite 4
-        canEvolve: false
+		canEvolve: true,
+		evolution: 'tsunomon'
     },
     pitchmon: {
         name: 'Pitchmon',
         walk: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
         happiness: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/pitchmon/pitchmon 4.png', // Sprite 4
-        canEvolve: false
+		canEvolve: true,
+		evolution: 'pakumon'
     },
     koromon: {
         name: 'Koromon',
@@ -89,12 +92,33 @@ const PET_TYPES = {
         happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/koromon/koromon 4.png', // Sprite 4
         canEvolve: false // Koromon is evolved form, doesn't evolve further
+	},
+	tokomon: {
+		name: 'Tokomon',
+		walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/tokomon/tokomon 4.png', // Sprite 4
+		canEvolve: false
+	},
+	tsunomon: {
+		name: 'Tsunomon',
+		walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/tsunomon/tsunomon 4.png', // Sprite 4
+		canEvolve: false
+	},
+	pakumon: {
+		name: 'Pakumon',
+		walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'], // Sprite 1 and 2
+		happiness: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 3.png'], // Sprite 1 and 3
+		sleep: 'sprites/pakumon/pakumon 4.png', // Sprite 4
+		canEvolve: false
     }
 };
 
 // Current pet state
 let currentPetType = 'botamon'; // Default pet type (will be set on hatching)
-let currentEvolutionStage = 1; // 1 = base form, 2 = evolved form (only for Botamon -> Koromon)
+let currentEvolutionStage = 1; // 1 = base form, 2 = evolved form
 
 // Get current pet data based on pet type and evolution stage
 function getCurrentPetData() {
@@ -302,6 +326,18 @@ function updateMoneyDisplay(amount) {
 // Initialize everything
 window.addEventListener('load', () => {
     console.log('Window loaded, initializing pet...');
+	
+	// Test-only: force evolve button
+	try {
+		const evolveBtn = document.getElementById('evolveTestBtn');
+		if (evolveBtn) {
+			evolveBtn.addEventListener('click', () => {
+				if (!isEvolving) {
+					evolvePet();
+				}
+			});
+		}
+	} catch (_) {}
     
     // Load stored stats from main process first
     let statsLoaded = false;

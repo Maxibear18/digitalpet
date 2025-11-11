@@ -48,25 +48,46 @@ ipcRenderer.on('game:petType', (_event, petType, evolutionStage) => {
             walk: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 2.png'],
             happiness: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 3.png'],
             sleep: 'sprites/poyomon/poyomon 4.png',
-            canEvolve: false
+			canEvolve: true,
+			evolution: 'tokomon'
         },
         punimon: {
             walk: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 2.png'],
             happiness: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 3.png'],
             sleep: 'sprites/punimon/punimon 4.png',
-            canEvolve: false
+			canEvolve: true,
+			evolution: 'tsunomon'
         },
         pitchmon: {
             walk: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 2.png'],
             happiness: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 3.png'],
             sleep: 'sprites/pitchmon/pitchmon 4.png',
-            canEvolve: false
+			canEvolve: true,
+			evolution: 'pakumon'
         },
         koromon: {
             walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'],
             happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'],
             sleep: 'sprites/koromon/koromon 4.png',
             canEvolve: false
+		},
+		tokomon: {
+			walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'],
+			happiness: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 3.png'],
+			sleep: 'sprites/tokomon/tokomon 4.png',
+			canEvolve: false
+		},
+		tsunomon: {
+			walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'],
+			happiness: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 3.png'],
+			sleep: 'sprites/tsunomon/tsunomon 4.png',
+			canEvolve: false
+		},
+		pakumon: {
+			walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'],
+			happiness: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 3.png'],
+			sleep: 'sprites/pakumon/pakumon 4.png',
+			canEvolve: false
         }
     };
     
@@ -229,7 +250,10 @@ function makePetCheer() {
             poyomon: { walk: ['sprites/poyomon/poyomon.png', 'sprites/poyomon/poyomon 2.png'] },
             punimon: { walk: ['sprites/punimon/punimon.png', 'sprites/punimon/punimon 2.png'] },
             pitchmon: { walk: ['sprites/pitchmon/pitchmon.png', 'sprites/pitchmon/pitchmon 2.png'] },
-            koromon: { walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'] }
+			koromon: { walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'] },
+			tokomon: { walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'] },
+			tsunomon: { walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'] },
+			pakumon: { walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'] }
         };
         // Get current pet type from sprite src
         const currentSrc = petSpriteEl.src;
