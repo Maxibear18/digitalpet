@@ -91,44 +91,82 @@ const PET_TYPES = {
         walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'], // Sprite 1 and 2
         happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'], // Sprite 1 and 3
         sleep: 'sprites/koromon/koromon 4.png', // Sprite 4
-        canEvolve: false // Koromon is evolved form, doesn't evolve further
+		canEvolve: true,
+		evolution: 'agumon'
 	},
 	tokomon: {
 		name: 'Tokomon',
 		walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'], // Sprite 1 and 2
 		happiness: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 3.png'], // Sprite 1 and 3
 		sleep: 'sprites/tokomon/tokomon 4.png', // Sprite 4
-		canEvolve: false
+		canEvolve: true,
+		evolution: 'patamon'
 	},
 	tsunomon: {
 		name: 'Tsunomon',
 		walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
 		happiness: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
 		sleep: 'sprites/tsunomon/tsunomon 4.png', // Sprite 4
-		canEvolve: false
+		canEvolve: true,
+		evolution: 'gabumon'
 	},
 	pakumon: {
 		name: 'Pakumon',
 		walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'], // Sprite 1 and 2
 		happiness: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 3.png'], // Sprite 1 and 3
 		sleep: 'sprites/pakumon/pakumon 4.png', // Sprite 4
+		canEvolve: true,
+		evolution: 'betamon'
+	},
+	agumon: {
+		name: 'Agumon',
+		walk: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 2.png'],
+		happiness: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 3.png'],
+		sleep: 'sprites/agumon/agumon 4.png',
+		canEvolve: false
+	},
+	betamon: {
+		name: 'Betamon',
+		walk: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 2.png'],
+		happiness: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 3.png'],
+		sleep: 'sprites/betamon/betamon 4.png',
+		canEvolve: false
+	},
+	gabumon: {
+		name: 'Gabumon',
+		walk: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 2.png'],
+		happiness: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 3.png'],
+		sleep: 'sprites/gabumon/gabumon 4.png',
+		canEvolve: false
+	},
+	patamon: {
+		name: 'Patamon',
+		walk: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 2.png'],
+		happiness: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 3.png'],
+		sleep: 'sprites/patamon/patamon 4.png',
 		canEvolve: false
     }
 };
 
 // Current pet state
 let currentPetType = 'botamon'; // Default pet type (will be set on hatching)
-let currentEvolutionStage = 1; // 1 = base form, 2 = evolved form
+let currentEvolutionStage = 1; // 1 = base, 2 = first evolution, 3 = second evolution
+
+// Resolve the type key for a given stage in the evolution chain
+function getResolvedTypeForStage(typeKey, stage) {
+	if (!PET_TYPES[typeKey]) return 'botamon';
+	if (stage <= 1) return typeKey;
+	const first = PET_TYPES[typeKey].evolution && PET_TYPES[PET_TYPES[typeKey].evolution] ? PET_TYPES[typeKey].evolution : null;
+	if (stage === 2) return first || typeKey;
+	if (!first) return typeKey;
+	const second = PET_TYPES[first].evolution && PET_TYPES[PET_TYPES[first].evolution] ? PET_TYPES[first].evolution : null;
+	return second || first;
+}
 
 // Get current pet data based on pet type and evolution stage
 function getCurrentPetData() {
-    // If evolved (stage 2) and pet can evolve, use evolution form
-    if (currentEvolutionStage === 2 && PET_TYPES[currentPetType].canEvolve) {
-        const evolutionType = PET_TYPES[currentPetType].evolution;
-        return PET_TYPES[evolutionType];
-    }
-    // Otherwise use current pet type
-    return PET_TYPES[currentPetType] || PET_TYPES.botamon;
+	const resolvedType = getResolvedTypeForStage(currentPetType, currentEvolutionStage);
+	return PET_TYPES[resolvedType] || PET_TYPES.botamon;
 }
 
 // Get walking sprites for current pet
@@ -231,7 +269,7 @@ let isDead = false; // Pet death state
 
 // Experience and Evolution system
 let experience = 0; // Current experience (hidden stat)
-const EXPERIENCE_MAX = 300; // Experience needed to evolve
+let EXPERIENCE_MAX = 300; // Experience needed for current evolution threshold
 const EXPERIENCE_GAIN_EAT = 2; // Experience gained from eating
 const EXPERIENCE_GAIN_PET = 2; // Experience gained from petting
 const EXPERIENCE_GAIN_MOVE = 1; // Experience gained from moving
@@ -2785,26 +2823,27 @@ function stopPassiveExperienceGain() {
 function evolvePet() {
     if (isDead || isEvolving) return; // Can't evolve when dead or already evolving
     
-    // Check if current pet can evolve (only Botamon can evolve)
-    const currentPetData = PET_TYPES[currentPetType];
-    if (!currentPetData || !currentPetData.canEvolve) {
-        console.log(`${currentPetData ? currentPetData.name : 'Pet'} cannot evolve!`);
-        return; // This pet cannot evolve
-    }
-    
-    // Check if already at max evolution stage
-    if (currentEvolutionStage >= 2) {
-        console.log('Pet is already at max evolution!');
-        return; // Already evolved
-    }
+	// Determine current resolved form and whether it can evolve
+	const resolvedType = getResolvedTypeForStage(currentPetType, currentEvolutionStage);
+	const resolvedData = PET_TYPES[resolvedType];
+	if (!resolvedData || !resolvedData.canEvolve) {
+		console.log(`${resolvedData ? resolvedData.name : 'Pet'} cannot evolve!`);
+		return;
+	}
+
+	// Check if already at max evolution stage (cap at 3)
+	if (currentEvolutionStage >= 3) {
+		console.log('Pet is already at max evolution!');
+		return;
+	}
     
     // Stop exercising if exercising (exercise should not continue during evolution)
     if (isExercising) {
         stopExercising();
     }
     
-    // Botamon evolves to Koromon (stage 2)
-    const nextStage = 2;
+	// Evolve to next stage
+	const nextStage = currentEvolutionStage + 1;
     
     // Start evolution animation
     isEvolving = true;
@@ -2850,9 +2889,18 @@ function evolvePet() {
     
     // Step 3: After overlay is visible, change sprites during the 3 seconds
     setTimeout(() => {
-        // Evolve to next stage (Botamon -> Koromon)
+		// Evolve to next stage
         currentEvolutionStage = nextStage;
-        console.log(`${currentPetData.name} evolved to ${PET_TYPES[currentPetData.evolution].name}!`);
+
+		// Update next experience threshold after first evolution
+		if (currentEvolutionStage === 2) {
+			EXPERIENCE_MAX = 450;
+		}
+
+		// Log new form name
+		const newResolvedType = getResolvedTypeForStage(currentPetType, currentEvolutionStage);
+		const newData = PET_TYPES[newResolvedType];
+		console.log(`${resolvedData.name} evolved to ${newData ? newData.name : 'Next Form'}!`);
         
         // Reset experience to 0
         experience = 0;

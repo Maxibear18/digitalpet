@@ -67,36 +67,71 @@ ipcRenderer.on('game:petType', (_event, petType, evolutionStage) => {
         koromon: {
             walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'],
             happiness: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 3.png'],
-            sleep: 'sprites/koromon/koromon 4.png',
-            canEvolve: false
+			sleep: 'sprites/koromon/koromon 4.png',
+			canEvolve: true,
+			evolution: 'agumon'
 		},
 		tokomon: {
 		walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'],
 		happiness: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 3.png'],
-		sleep: 'sprites/tokomon/tokomon 4.png',
-			canEvolve: false
+			sleep: 'sprites/tokomon/tokomon 4.png',
+			canEvolve: true,
+			evolution: 'patamon'
 		},
 		tsunomon: {
 		walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'],
 		happiness: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 3.png'],
-		sleep: 'sprites/tsunomon/tsunomon 4.png',
-			canEvolve: false
+			sleep: 'sprites/tsunomon/tsunomon 4.png',
+			canEvolve: true,
+			evolution: 'gabumon'
 		},
 		pakumon: {
 		walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'],
 		happiness: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 3.png'],
-		sleep: 'sprites/pakumon/pakumon 4.png',
+			sleep: 'sprites/pakumon/pakumon 4.png',
+			canEvolve: true,
+			evolution: 'betamon'
+		},
+		agumon: {
+			walk: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 2.png'],
+			happiness: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 3.png'],
+			sleep: 'sprites/agumon/agumon 4.png',
+			canEvolve: false
+		},
+		betamon: {
+			walk: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 2.png'],
+			happiness: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 3.png'],
+			sleep: 'sprites/betamon/betamon 4.png',
+			canEvolve: false
+		},
+		gabumon: {
+			walk: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 2.png'],
+			happiness: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 3.png'],
+			sleep: 'sprites/gabumon/gabumon 4.png',
+			canEvolve: false
+		},
+		patamon: {
+			walk: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 2.png'],
+			happiness: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 3.png'],
+			sleep: 'sprites/patamon/patamon 4.png',
 			canEvolve: false
         }
     };
     
-    function getCurrentPetData() {
-        if (evolutionStage === 2 && PET_TYPES[petType] && PET_TYPES[petType].canEvolve) {
-            const evolutionType = PET_TYPES[petType].evolution;
-            return PET_TYPES[evolutionType];
-        }
-        return PET_TYPES[petType] || PET_TYPES.botamon;
-    }
+	function getResolvedTypeForStage(typeKey, stage) {
+		if (!PET_TYPES[typeKey]) return 'botamon';
+		if (stage <= 1) return typeKey;
+		const first = PET_TYPES[typeKey].evolution && PET_TYPES[PET_TYPES[typeKey].evolution] ? PET_TYPES[typeKey].evolution : null;
+		if (stage === 2) return first || typeKey;
+		if (!first) return typeKey;
+		const second = PET_TYPES[first].evolution && PET_TYPES[PET_TYPES[first].evolution] ? PET_TYPES[first].evolution : null;
+		return second || first;
+	}
+	
+	function getCurrentPetData() {
+		const resolvedType = getResolvedTypeForStage(petType, evolutionStage);
+		return PET_TYPES[resolvedType] || PET_TYPES.botamon;
+	}
     
     const petData = getCurrentPetData();
     if (petSpriteEl && petData) {
@@ -323,7 +358,11 @@ function makePetCheer() {
 			koromon: { walk: ['sprites/koromon/koromon.png', 'sprites/koromon/koromon 2.png'] },
 			tokomon: { walk: ['sprites/tokomon/tokomon.png', 'sprites/tokomon/tokomon 2.png'] },
 			tsunomon: { walk: ['sprites/tsunomon/tsunomon.png', 'sprites/tsunomon/tsunomon 2.png'] },
-			pakumon: { walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'] }
+			pakumon: { walk: ['sprites/pakumon/pakumon.png', 'sprites/pakumon/pakumon 2.png'] },
+			agumon: { walk: ['sprites/agumon/agumon.png', 'sprites/agumon/agumon 2.png'] },
+			betamon: { walk: ['sprites/betamon/betamon.png', 'sprites/betamon/betamon 2.png'] },
+			gabumon: { walk: ['sprites/gabumon/gabumon.png', 'sprites/gabumon/gabumon 2.png'] },
+			patamon: { walk: ['sprites/patamon/patamon.png', 'sprites/patamon/patamon 2.png'] }
         };
         // Get current pet type from sprite src
         const currentSrc = petSpriteEl.src;
