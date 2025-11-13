@@ -15,6 +15,11 @@ let wasteCount = 0; // Track waste count for sickness chance calculation
 let isEggHatched = false; // Track if egg has hatched (stats don't decay until hatched)
 let hasEgg = false; // Track if player has purchased an egg (prevents buying more eggs)
 
+// Purchased games tracking
+let purchasedGames = {
+  slotMachine: false // Track if slot machine has been purchased
+};
+
 // Store stats even when stats window is closed
 let storedStats = {
   health: { value: 50, max: 100 },
@@ -47,6 +52,7 @@ const ITEM_COSTS = {
   medkit1: 50,
   egg1: 30,
   eggInter: 50,
+  slotMachine: 500,
   bubblewand: 200,
   calculator: 325,
   chimes: 250,
@@ -228,32 +234,48 @@ function buildMenu() {
     {
       label: 'Games',
       enabled: isEggHatched, // Disable until pet is hatched
-      submenu: [
-        {
-          label: 'Simon Says',
-          click: () => {
-            if (!isEggHatched) return; // Prevent action if pet not hatched
-            openSimonSaysWindow();
+      submenu: (() => {
+        const gamesSubmenu = [
+          {
+            label: 'Simon Says',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openSimonSaysWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
           },
-          enabled: isEggHatched // Disable until pet is hatched
-        },
-        {
-          label: 'Memory Match',
-          click: () => {
-            if (!isEggHatched) return; // Prevent action if pet not hatched
-            openMemoryMatchWindow();
+          {
+            label: 'Memory Match',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openMemoryMatchWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
           },
-          enabled: isEggHatched // Disable until pet is hatched
-        },
-        {
-          label: 'Reaction Time',
-          click: () => {
-            if (!isEggHatched) return; // Prevent action if pet not hatched
-            openReactionTimeWindow();
-          },
-          enabled: isEggHatched // Disable until pet is hatched
+          {
+            label: 'Reaction Time',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openReactionTimeWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
+          }
+        ];
+        
+        // Add Slot Machine if purchased
+        if (purchasedGames.slotMachine) {
+          gamesSubmenu.push({
+            label: 'Slot Machine',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openSlotMachineWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
+          });
         }
-      ]
+        
+        return gamesSubmenu;
+      })()
     },
     {
       label: 'Shop',
@@ -298,6 +320,8 @@ function openShopWindow() {
     // Send pet state to shop window (to disable egg button if pet exists or egg purchased)
     shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg, petType: currentPetType, evolutionStage: currentEvolutionStage });
     shopWindow.webContents.send('shop:petType', currentPetType, currentEvolutionStage);
+    // Send purchased games state
+    shopWindow.webContents.send('games:purchased', purchasedGames);
   });
   
   shopWindow.on('closed', () => {
@@ -329,6 +353,11 @@ function openGamesWindow() {
     gamesWindow.setMenuBarVisibility(false);
   }
   gamesWindow.loadFile('games.html');
+  
+  // Send purchased games state when games window is ready
+  gamesWindow.webContents.once('did-finish-load', () => {
+    gamesWindow.webContents.send('games:purchased', purchasedGames);
+  });
   
   gamesWindow.on('closed', () => {
     gamesWindow = null;
@@ -439,12 +468,27 @@ ipcMain.on('shop:buy', (_event, payload) => {
     }
   }
   
+  // Track game purchase
+  if (itemId === 'slotMachine') {
+    purchasedGames.slotMachine = true;
+    // Rebuild menu to include the new game
+    buildMenu();
+    // Notify shop window that game was purchased
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('game:purchased', 'slotMachine');
+    }
+    // Notify games window if it's open
+    if (gamesWindow && !gamesWindow.isDestroyed()) {
+      gamesWindow.webContents.send('game:unlocked', 'slotMachine');
+    }
+  }
+  
   // Send money update to all windows
   sendMoneyUpdate();
   
-  // Forward purchase to pet window to spawn item
+  // Forward purchase to pet window to spawn item (only for items that spawn, not games)
   // Include costs in payload for items
-  if (petWindow && !petWindow.isDestroyed()) {
+  if (petWindow && !petWindow.isDestroyed() && payload.type !== 'game') {
     const spawnPayload = { ...payload };
     if (payload.type === 'food' && cost !== undefined) {
       spawnPayload.foodCost = cost;
@@ -710,6 +754,7 @@ ipcMain.on('money:request', (event) => {
 let simonSaysWindow = null;
 let memoryMatchWindow = null;
 let reactionTimeWindow = null;
+let slotMachineWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
@@ -717,6 +762,8 @@ ipcMain.on('game:open', (_event, gameName) => {
     openMemoryMatchWindow();
   } else if (gameName === 'reaction-time') {
     openReactionTimeWindow();
+  } else if (gameName === 'slot-machine') {
+    openSlotMachineWindow();
   }
 });
 
@@ -726,6 +773,22 @@ ipcMain.on('game:petHappy', () => {
   if (petWindow && !petWindow.isDestroyed()) {
     petWindow.webContents.send('game:petHappy');
   }
+});
+
+// Handle pet type request from game windows
+ipcMain.on('game:requestPetType', (event) => {
+  event.reply('game:petType', currentPetType, currentEvolutionStage);
+});
+
+// Handle purchased games request
+ipcMain.on('games:requestPurchased', (event) => {
+  event.reply('games:purchased', purchasedGames);
+});
+
+// Handle money update from slot machine
+ipcMain.on('money:update', (_event, amount) => {
+  money = amount;
+  sendMoneyUpdate();
 });
 
 // Open Simon Says game window
@@ -828,6 +891,36 @@ function openReactionTimeWindow() {
   
   reactionTimeWindow.on('closed', () => {
     reactionTimeWindow = null;
+  });
+}
+
+// Open Slot Machine game window
+function openSlotMachineWindow() {
+  if (slotMachineWindow && !slotMachineWindow.isDestroyed()) {
+    slotMachineWindow.focus();
+    return;
+  }
+  slotMachineWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    resizable: true,
+    title: 'Slot Machine',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (slotMachineWindow && !slotMachineWindow.isDestroyed()) {
+    slotMachineWindow.setMenu(null);
+    slotMachineWindow.setMenuBarVisibility(false);
+  }
+  slotMachineWindow.loadFile('slot-machine.html');
+  slotMachineWindow.on('closed', () => {
+    slotMachineWindow = null;
   });
 }
 

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurdles</title>
+    <link rel="stylesheet" href="hurdles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="hurdles.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Hurdles</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="timer-info">
+                    <div class="timer-label">Time:</div>
+                    <div class="timer-display" id="timerDisplay">0:00</div>
+                </div>
+                <div class="money-info">
+                    <div class="money-label">Earned:</div>
+                    <div class="money-display" id="moneyDisplay">$0</div>
+                </div>
+                <div class="status-message" id="statusMessage">Press SPACE or click to jump!</div>
+            </div>
+            
+            <div class="game-area" id="gameArea">
+                <div class="ground"></div>
+                <div class="pet-character" id="petCharacter">
+                    <img id="petSprite" src="sprites/basic pets/botamon/botamon.png" alt="Pet">
+                </div>
+                <div class="obstacles-container" id="obstaclesContainer"></div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="startBtn">Start Game</button>
+                <button class="control-btn" id="restartBtn" style="display: none;">Play Again</button>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Hurdles</h2>
+                        <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>Objective:</strong> Jump over walls and spikes to survive as long as possible!</p>
+                        <p><strong>Controls:</strong></p>
+                        <ul>
+                            <li>Press <strong>SPACE</strong> or <strong>click</strong> to make your pet jump</li>
+                            <li>Hold to jump higher</li>
+                        </ul>
+                        <p><strong>Rewards:</strong></p>
+                        <ul>
+                            <li>Earn <strong>$10</strong> every 30 seconds</li>
+                            <li>The game speeds up every 5 seconds</li>
+                        </ul>
+                        <p><strong>Game Over:</strong> Hit a wall or spike to end the game</p>
+                        <p><strong>Note:</strong> Your pet will lose 10 sleep and 15 hunger after each game</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+

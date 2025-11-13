@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine</title>
+    <link rel="stylesheet" href="slot-machine.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="slot-machine.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Slot Machine</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="money-info">
+                    <div class="money-label">Your Money:</div>
+                    <div class="money-display" id="playerMoney">$0</div>
+                </div>
+                <div class="bet-info">
+                    <div class="bet-label">Bet Amount:</div>
+                    <input type="number" id="betAmount" min="0" max="100" value="10" class="bet-input">
+                    <div class="bet-display" id="betDisplay">$10</div>
+                </div>
+            </div>
+            
+            <div class="slot-machine-container">
+                <div class="slot-machine">
+                    <div class="reels-container">
+                        <div class="reel" id="reel1">
+                            <div class="reel-item" data-icon="cherry">🍒</div>
+                            <div class="reel-item" data-icon="riceball">🍙</div>
+                            <div class="reel-item" data-icon="meat">🍖</div>
+                        </div>
+                        <div class="reel" id="reel2">
+                            <div class="reel-item" data-icon="sandwich">🥪</div>
+                            <div class="reel-item" data-icon="cake">🎂</div>
+                            <div class="reel-item" data-icon="riceball">🍙</div>
+                        </div>
+                        <div class="reel" id="reel3">
+                            <div class="reel-item" data-icon="meat">🍖</div>
+                            <div class="reel-item" data-icon="sandwich">🥪</div>
+                            <div class="reel-item" data-icon="cherry">🍒</div>
+                        </div>
+                    </div>
+                    <div class="win-line"></div>
+                </div>
+                <div class="result-message" id="resultMessage">Place your bet and spin!</div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="spinBtn">Spin ($10)</button>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Slot Machine</h2>
+                        <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>Objective:</strong> Match food symbols on the middle row to win money for your pet!</p>
+                        <p><strong>How to Play:</strong></p>
+                        <ul>
+                            <li>Choose your bet ($0-$100)</li>
+                            <li>Click "Spin" to roll the reels</li>
+                            <li>Only the middle row of food matters &mdash; line up 2 or 3 of the same snack to score rewards</li>
+                        </ul>
+                        <p><strong>Payouts (middle row only):</strong></p>
+                        <ul>
+                            <li><strong>Two of a kind:</strong> Cherries x1.1, Riceball x1.2, Sandwich x1.3, Meat x1.5, Cake x1.7</li>
+                            <li><strong>Three of a kind:</strong> Cherries x1.3, Riceball x1.5, Sandwich x1.7, Meat x2.0, Cake x2.5</li>
+                            <li>No match on the middle row: you lose your bet</li>
+                        </ul>
+                        <p><strong>Pet Effects:</strong> Every 3 spins your pet loses 5 hunger and 5 sleep but gains 5 happiness and 5 experience.</p>
+                        <p><strong>Celebrations:</strong> Matching wins make your pet pop out in a bubble to cheer you on!</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+

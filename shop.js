@@ -5,6 +5,7 @@ let hasPet = false; // Track if pet exists (egg hatched)
 let hasEgg = false; // Track if player has purchased an egg
 let shopPetType = 'botamon';
 let shopEvolutionStage = 1;
+let purchasedGames = { slotMachine: false }; // Track purchased games
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -170,6 +171,32 @@ window.addEventListener('DOMContentLoaded', () => {
             alert('You already have a pet! You cannot buy another egg.');
         }
     });
+    
+    // Listen for purchased games updates
+    ipcRenderer.on('games:purchased', (_event, games) => {
+        purchasedGames = games || { slotMachine: false };
+        updateGameVisibility();
+    });
+    
+    // Listen for individual game purchase
+    ipcRenderer.on('game:purchased', (_event, gameId) => {
+        if (gameId === 'slotMachine') {
+            purchasedGames.slotMachine = true;
+            updateGameVisibility();
+        }
+    });
+    
+    // Update game visibility in shop
+    function updateGameVisibility() {
+        const slotMachineCard = document.getElementById('slotMachineGameCard');
+        if (slotMachineCard) {
+            if (purchasedGames.slotMachine) {
+                slotMachineCard.style.display = 'none'; // Hide if purchased
+            } else {
+                slotMachineCard.style.display = ''; // Show if not purchased
+            }
+        }
+    }
     
     // Listen for pet state updates (to enable/disable egg button)
     ipcRenderer.on('pet:stateUpdate', (_event, data) => {
@@ -383,6 +410,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'pudding',
                     toyCost: cost,
                     imagePath: 'sprites/toys/Pudding.png'
+                });
+            } else if (item === 'slotMachine') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'game',
+                    id: 'slotMachine',
+                    gameCost: cost
                 });
             }
         });
