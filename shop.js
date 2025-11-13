@@ -45,24 +45,29 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function getSellSpriteFor(typeKey, stage) {
         // Map minimal walk sprites for preview
-        const base = 'sprites/basic pets';
+        const baseBasic = 'sprites/basic pets';
+        const baseInter = 'sprites/inter pets';
         const MAP = {
-            botamon: [`${base}/botamon/botamon.png`],
-            poyomon: [`${base}/poyomon/poyomon.png`],
-            punimon: [`${base}/punimon/punimon.png`],
-            pitchmon: [`${base}/pitchmon/pitchmon.png`],
-            koromon: [`${base}/koromon/koromon.png`],
-            tokomon: [`${base}/tokomon/tokomon.png`],
-            tsunomon: [`${base}/tsunomon/tsunomon.png`],
-            pakumon: [`${base}/pakumon/pakumon.png`],
-            agumon: [`${base}/agumon/agumon.png`],
-            betamon: [`${base}/betamon/betamon.png`],
-            gabumon: [`${base}/gabumon/gabumon.png`],
-            patamon: [`${base}/patamon/patamon.png`],
-            greymon: [`${base}/greymon/greymon.png`],
-            garurumon: [`${base}/garurumon/garurumon.png`],
-            angemon: [`${base}/angemon/angemon.png`],
-            seadramon: [`${base}/seadramon/seadramon.png`]
+            botamon: [`${baseBasic}/botamon/botamon.png`],
+            poyomon: [`${baseBasic}/poyomon/poyomon.png`],
+            punimon: [`${baseBasic}/punimon/punimon.png`],
+            pitchmon: [`${baseBasic}/pitchmon/pitchmon.png`],
+            koromon: [`${baseBasic}/koromon/koromon.png`],
+            tokomon: [`${baseBasic}/tokomon/tokomon.png`],
+            tsunomon: [`${baseBasic}/tsunomon/tsunomon.png`],
+            pakumon: [`${baseBasic}/pakumon/pakumon.png`],
+            agumon: [`${baseBasic}/agumon/agumon.png`],
+            betamon: [`${baseBasic}/betamon/betamon.png`],
+            gabumon: [`${baseBasic}/gabumon/gabumon.png`],
+            patamon: [`${baseBasic}/patamon/patamon.png`],
+            greymon: [`${baseBasic}/greymon/greymon.png`],
+            garurumon: [`${baseBasic}/garurumon/garurumon.png`],
+            angemon: [`${baseBasic}/angemon/angemon.png`],
+            seadramon: [`${baseBasic}/seadramon/seadramon.png`],
+            giromon: [`${baseInter}/giromon/giromon.png`],
+            zurumon: [`${baseInter}/zurumon/zurumon.png`],
+            yuramon: [`${baseInter}/yuramon/yuramon.png`],
+            pixiemon: [`${baseInter}/pixiemon/pixiemon.png`]
         };
         // Resolve evolved type by stage (same logic as games: follow evolution chain)
         const EVOLVE = {
@@ -77,13 +82,23 @@ window.addEventListener('DOMContentLoaded', () => {
             agumon: 'greymon',
             betamon: 'seadramon',
             gabumon: 'garurumon',
-            patamon: 'angemon'
+            patamon: 'angemon',
+            giromon: 'gazimon', // Placeholder evolution - to be updated
+            zurumon: 'pagumon', // Placeholder evolution - to be updated
+            yuramon: 'tanemon', // Placeholder evolution - to be updated
+            pixiemon: 'piyomon' // Placeholder evolution - to be updated
         };
         let resolved = typeKey;
         for (let s = 2; s <= stage; s++) {
             const next = EVOLVE[resolved];
             if (!next) break;
             resolved = next;
+            // Add evolved intermediate pets to MAP if not already there
+            if (resolved && !MAP[resolved]) {
+                if (resolved === 'gazimon' || resolved === 'pagumon' || resolved === 'tanemon' || resolved === 'piyomon') {
+                    MAP[resolved] = [`${baseInter}/${resolved}/${resolved}.png`];
+                }
+            }
         }
         const arr = MAP[resolved] || MAP.botamon;
         return encodeURI(arr[0]);
@@ -167,7 +182,7 @@ window.addEventListener('DOMContentLoaded', () => {
             const item = btn.dataset.item;
             
             // Disable egg button if pet already exists
-            if (item === 'egg1' && hasPet) {
+            if ((item === 'egg1' || item === 'eggInter') && hasPet) {
                 btn.disabled = true;
                 btn.style.opacity = '0.5';
                 btn.style.cursor = 'not-allowed';
@@ -188,8 +203,8 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Update egg button specifically
     function updateEggButton() {
-        const eggButton = buyButtons.find(btn => btn.dataset.item === 'egg1');
-        if (eggButton) {
+        const eggButtons = buyButtons.filter(btn => btn.dataset.item === 'egg1' || btn.dataset.item === 'eggInter');
+        eggButtons.forEach(eggButton => {
             if (hasPet || hasEgg) {
                 eggButton.disabled = true;
                 eggButton.style.opacity = '0.5';
@@ -206,7 +221,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     eggButton.style.cursor = 'pointer';
                 }
             }
-        }
+        });
     }
 
     buyButtons.forEach(btn => {
@@ -301,6 +316,17 @@ window.addEventListener('DOMContentLoaded', () => {
                     type: 'egg',
                     id: 'egg1',
                     imagePath: 'sprites/eggs/digiegg1.png'
+                });
+            } else if (item === 'eggInter') {
+                // Check if pet already exists or egg already purchased
+                if (hasPet || hasEgg) {
+                    alert('You already have an egg or pet! You cannot buy another egg.');
+                    return;
+                }
+                ipcRenderer.send('shop:buy', {
+                    type: 'egg',
+                    id: 'eggInter',
+                    imagePath: 'sprites/eggs/digiegg inter.png'
                 });
             } else if (item === 'bubblewand') {
                 ipcRenderer.send('shop:buy', {

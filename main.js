@@ -46,6 +46,7 @@ const ITEM_COSTS = {
   medicine1: 35,
   medkit1: 50,
   egg1: 30,
+  eggInter: 50,
   bubblewand: 200,
   calculator: 325,
   chimes: 250,
@@ -410,7 +411,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   }
   
   // Prevent buying eggs if player already has an egg (purchased or hatched)
-  if (itemId === 'egg1' && (hasEgg || isEggHatched)) {
+  if ((itemId === 'egg1' || itemId === 'eggInter') && (hasEgg || isEggHatched)) {
     // Egg already purchased or pet exists - notify shop window
     if (shopWindow && !shopWindow.isDestroyed()) {
       shopWindow.webContents.send('shop:purchaseFailed', { reason: 'pet_exists' });
@@ -430,7 +431,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   money -= cost;
   
   // Track egg purchase
-  if (itemId === 'egg1') {
+  if (itemId === 'egg1' || itemId === 'eggInter') {
     hasEgg = true;
     // Notify shop window that egg was purchased
     if (shopWindow && !shopWindow.isDestroyed()) {

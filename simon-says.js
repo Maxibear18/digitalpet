@@ -144,6 +144,58 @@ ipcRenderer.on('game:petType', (_event, petType, evolutionStage) => {
 			happiness: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 3.png'],
 			sleep: 'sprites/basic pets/seadramon/seadramon 4.png',
 			canEvolve: false
+        },
+		giromon: {
+			walk: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 2.png'],
+			happiness: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 3.png'],
+			sleep: 'sprites/inter pets/giromon/giromon 4.png',
+			canEvolve: true,
+			evolution: 'gazimon' // Placeholder evolution - to be updated
+        },
+		zurumon: {
+			walk: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 2.png'],
+			happiness: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 3.png'],
+			sleep: 'sprites/inter pets/zurumon/zurumon 4.png',
+			canEvolve: true,
+			evolution: 'pagumon' // Placeholder evolution - to be updated
+        },
+		yuramon: {
+			walk: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 2.png'],
+			happiness: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 3.png'],
+			sleep: 'sprites/inter pets/yuramon/yuramon 4.png',
+			canEvolve: true,
+			evolution: 'tanemon' // Placeholder evolution - to be updated
+        },
+		pixiemon: {
+			walk: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 2.png'],
+			happiness: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 3.png'],
+			sleep: 'sprites/inter pets/pixiemon/pixiemon 4.png',
+			canEvolve: true,
+			evolution: 'piyomon' // Placeholder evolution - to be updated
+        },
+		gazimon: {
+			walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
+			happiness: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 3.png'],
+			sleep: 'sprites/inter pets/gazimon/gazimon 4.png',
+			canEvolve: false // Placeholder - to be updated
+        },
+		pagumon: {
+			walk: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 2.png'],
+			happiness: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 3.png'],
+			sleep: 'sprites/inter pets/pagumon/pagumon 4.png',
+			canEvolve: false // Placeholder - to be updated
+        },
+		tanemon: {
+			walk: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 2.png'],
+			happiness: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 3.png'],
+			sleep: 'sprites/inter pets/tanemon/tanemon 4.png',
+			canEvolve: false // Placeholder - to be updated
+        },
+		piyomon: {
+			walk: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 2.png'],
+			happiness: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 3.png'],
+			sleep: 'sprites/inter pets/piyomon/piyomon 4.png',
+			canEvolve: false // Placeholder - to be updated
         }
     };
     

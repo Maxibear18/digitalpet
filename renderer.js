@@ -177,6 +177,66 @@ const PET_TYPES = {
 		happiness: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 3.png'],
 		sleep: 'sprites/basic pets/seadramon/seadramon 4.png',
 		canEvolve: false
+    },
+	giromon: {
+		name: 'Giromon',
+		walk: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 2.png'],
+		happiness: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 3.png'],
+		sleep: 'sprites/inter pets/giromon/giromon 4.png',
+		canEvolve: true,
+		evolution: 'gazimon' // Placeholder evolution - to be updated
+    },
+	zurumon: {
+		name: 'Zurumon',
+		walk: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 2.png'],
+		happiness: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 3.png'],
+		sleep: 'sprites/inter pets/zurumon/zurumon 4.png',
+		canEvolve: true,
+		evolution: 'pagumon' // Placeholder evolution - to be updated
+    },
+	yuramon: {
+		name: 'Yuramon',
+		walk: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 2.png'],
+		happiness: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 3.png'],
+		sleep: 'sprites/inter pets/yuramon/yuramon 4.png',
+		canEvolve: true,
+		evolution: 'tanemon' // Placeholder evolution - to be updated
+    },
+	pixiemon: {
+		name: 'Pixiemon',
+		walk: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 2.png'],
+		happiness: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 3.png'],
+		sleep: 'sprites/inter pets/pixiemon/pixiemon 4.png',
+		canEvolve: true,
+		evolution: 'piyomon' // Placeholder evolution - to be updated
+    },
+	gazimon: {
+		name: 'Gazimon',
+		walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
+		happiness: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 3.png'],
+		sleep: 'sprites/inter pets/gazimon/gazimon 4.png',
+		canEvolve: false // Placeholder - to be updated
+    },
+	pagumon: {
+		name: 'Pagumon',
+		walk: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 2.png'],
+		happiness: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 3.png'],
+		sleep: 'sprites/inter pets/pagumon/pagumon 4.png',
+		canEvolve: false // Placeholder - to be updated
+    },
+	tanemon: {
+		name: 'Tanemon',
+		walk: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 2.png'],
+		happiness: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 3.png'],
+		sleep: 'sprites/inter pets/tanemon/tanemon 4.png',
+		canEvolve: false // Placeholder - to be updated
+    },
+	piyomon: {
+		name: 'Piyomon',
+		walk: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 2.png'],
+		happiness: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 3.png'],
+		sleep: 'sprites/inter pets/piyomon/piyomon 4.png',
+		canEvolve: false // Placeholder - to be updated
     }
 };
 
@@ -289,6 +349,7 @@ let hasEgg = false; // Track if player has an egg
 let isEggHatched = false; // Track if egg has hatched
 let eggElement = null; // Reference to the egg element
 let eggClickCount = 0; // Track clicks on egg (need 10 to hatch)
+let currentEggType = 'basic'; // Track egg type: 'basic' or 'intermediate'
 const EGGS_TO_HATCH = 10; // Number of clicks needed to hatch
 
 // Sickness mechanic
@@ -542,7 +603,9 @@ window.addEventListener('load', () => {
         if (!payload || !payload.imagePath) return;
         // Check item type
         if (payload.type === 'egg') {
-            spawnEgg(payload.imagePath);
+            // Determine egg type based on item id
+            const eggType = payload.id === 'eggInter' ? 'intermediate' : 'basic';
+            spawnEgg(payload.imagePath, eggType);
         } else if (payload.type === 'medicine') {
             spawnMedicineAndGoToIt(payload.imagePath, payload.medicineCost);
         } else if (payload.type === 'medkit') {
@@ -1925,7 +1988,7 @@ function stopAnimation() {
 }
 
 // Spawn egg in the center of the pet container
-function spawnEgg(imagePath) {
+function spawnEgg(imagePath, eggType = 'basic') {
     if (hasEgg) {
         console.log('Egg already exists!');
         return; // Only one egg at a time
@@ -1936,6 +1999,7 @@ function spawnEgg(imagePath) {
     
     hasEgg = true;
     eggClickCount = 0;
+    currentEggType = eggType; // Store the egg type
     
     // Create egg element
     const egg = document.createElement('img');
@@ -2030,12 +2094,19 @@ function playHatchingAnimation() {
     isEvolving = true;
     
     // Step 0: Randomly select pet type FIRST (before showing pet)
-    const petTypes = ['botamon', 'poyomon', 'punimon', 'pitchmon'];
+    // Check egg type to determine which pets can hatch
+    let petTypes;
+    if (currentEggType === 'intermediate') {
+        petTypes = ['giromon', 'zurumon', 'yuramon', 'pixiemon'];
+    } else {
+        // Default to basic pets
+        petTypes = ['botamon', 'poyomon', 'punimon', 'pitchmon'];
+    }
     const randomIndex = Math.floor(Math.random() * petTypes.length);
     currentPetType = petTypes[randomIndex];
     currentEvolutionStage = 1; // Start at base form
     
-    console.log(`Pet hatched: ${PET_TYPES[currentPetType].name}`);
+    console.log(`Pet hatched: ${PET_TYPES[currentPetType].name} (from ${currentEggType} egg)`);
     
     // Notify main process of pet type
     try {
