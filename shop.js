@@ -67,7 +67,19 @@ window.addEventListener('DOMContentLoaded', () => {
             giromon: [`${baseInter}/giromon/giromon.png`],
             zurumon: [`${baseInter}/zurumon/zurumon.png`],
             yuramon: [`${baseInter}/yuramon/yuramon.png`],
-            pixiemon: [`${baseInter}/pixiemon/pixiemon.png`]
+            pixiemon: [`${baseInter}/pixiemon/pixiemon.png`],
+            pagumon: [`${baseInter}/pagumon/pagumon.png`],
+            gazimon: [`${baseInter}/gazimon/gazimon.png`],
+            gizamon: [`${baseInter}/gizamon/gizamon.png`],
+            tanemon: [`${baseInter}/tanemon/tanemon.png`],
+            palmon: [`${baseInter}/palmon/palmon.png`],
+            vegimon: [`${baseInter}/vegimon/vegimon.png`],
+            mamemon: [`${baseInter}/mamemon/mamemon.png`],
+            monzaemon: [`${baseInter}/monzaemon/monzaemon.png`],
+            yukidarumon: [`${baseInter}/yukidramon/yukidarumon.png`],
+            flymon: [`${baseInter}/flymon/flymon.png`],
+            piyomon: [`${baseInter}/piyomon/piyomon.png`],
+            birdramon: [`${baseInter}/birdramon/birdramon.png`]
         };
         // Resolve evolved type by stage (same logic as games: follow evolution chain)
         const EVOLVE = {
@@ -83,22 +95,24 @@ window.addEventListener('DOMContentLoaded', () => {
             betamon: 'seadramon',
             gabumon: 'garurumon',
             patamon: 'angemon',
-            giromon: 'gazimon', // Placeholder evolution - to be updated
-            zurumon: 'pagumon', // Placeholder evolution - to be updated
-            yuramon: 'tanemon', // Placeholder evolution - to be updated
-            pixiemon: 'piyomon' // Placeholder evolution - to be updated
+            zurumon: 'pagumon',
+            pagumon: 'gazimon',
+            gazimon: 'gizamon',
+            yuramon: 'tanemon',
+            tanemon: 'palmon',
+            palmon: 'vegimon',
+            giromon: 'mamemon',
+            mamemon: 'monzaemon',
+            monzaemon: 'yukidarumon',
+            pixiemon: 'flymon',
+            flymon: 'piyomon',
+            piyomon: 'birdramon'
         };
         let resolved = typeKey;
         for (let s = 2; s <= stage; s++) {
             const next = EVOLVE[resolved];
             if (!next) break;
             resolved = next;
-            // Add evolved intermediate pets to MAP if not already there
-            if (resolved && !MAP[resolved]) {
-                if (resolved === 'gazimon' || resolved === 'pagumon' || resolved === 'tanemon' || resolved === 'piyomon') {
-                    MAP[resolved] = [`${baseInter}/${resolved}/${resolved}.png`];
-                }
-            }
         }
         const arr = MAP[resolved] || MAP.botamon;
         return encodeURI(arr[0]);

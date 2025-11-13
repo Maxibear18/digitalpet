@@ -149,52 +149,108 @@ ipcRenderer.on('game:petType', (_event, petType, evolutionStage) => {
 			happiness: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 3.png'],
 			sleep: 'sprites/inter pets/giromon/giromon 4.png',
 			canEvolve: true,
-			evolution: 'gazimon' // Placeholder evolution - to be updated
+			evolution: 'mamemon'
         },
 		zurumon: {
 			walk: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 2.png'],
 			happiness: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 3.png'],
 			sleep: 'sprites/inter pets/zurumon/zurumon 4.png',
 			canEvolve: true,
-			evolution: 'pagumon' // Placeholder evolution - to be updated
+			evolution: 'pagumon'
         },
 		yuramon: {
 			walk: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 2.png'],
 			happiness: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 3.png'],
 			sleep: 'sprites/inter pets/yuramon/yuramon 4.png',
 			canEvolve: true,
-			evolution: 'tanemon' // Placeholder evolution - to be updated
+			evolution: 'tanemon'
         },
 		pixiemon: {
 			walk: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 2.png'],
 			happiness: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 3.png'],
 			sleep: 'sprites/inter pets/pixiemon/pixiemon 4.png',
 			canEvolve: true,
-			evolution: 'piyomon' // Placeholder evolution - to be updated
-        },
-		gazimon: {
-			walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
-			happiness: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 3.png'],
-			sleep: 'sprites/inter pets/gazimon/gazimon 4.png',
-			canEvolve: false // Placeholder - to be updated
+			evolution: 'flymon'
         },
 		pagumon: {
 			walk: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 2.png'],
 			happiness: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 3.png'],
 			sleep: 'sprites/inter pets/pagumon/pagumon 4.png',
-			canEvolve: false // Placeholder - to be updated
+			canEvolve: true,
+			evolution: 'gazimon'
+        },
+		gazimon: {
+			walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
+			happiness: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 3.png'],
+			sleep: 'sprites/inter pets/gazimon/gazimon 4.png',
+			canEvolve: true,
+			evolution: 'gizamon'
+        },
+		gizamon: {
+			walk: ['sprites/inter pets/gizamon/gizamon.png', 'sprites/inter pets/gizamon/gizamon 2.png'],
+			happiness: ['sprites/inter pets/gizamon/gizamon.png', 'sprites/inter pets/gizamon/gizamon 3.png'],
+			sleep: 'sprites/inter pets/gizamon/gizamon 4.png',
+			canEvolve: false
         },
 		tanemon: {
 			walk: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 2.png'],
 			happiness: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 3.png'],
 			sleep: 'sprites/inter pets/tanemon/tanemon 4.png',
-			canEvolve: false // Placeholder - to be updated
+			canEvolve: true,
+			evolution: 'palmon'
+        },
+		palmon: {
+			walk: ['sprites/inter pets/palmon/palmon.png', 'sprites/inter pets/palmon/palmon 2.png'],
+			happiness: ['sprites/inter pets/palmon/palmon.png', 'sprites/inter pets/palmon/palmon 3.png'],
+			sleep: 'sprites/inter pets/palmon/palmon 4.png',
+			canEvolve: true,
+			evolution: 'vegimon'
+        },
+		vegimon: {
+			walk: ['sprites/inter pets/vegimon/vegimon.png', 'sprites/inter pets/vegimon/vegimon 2.png'],
+			happiness: ['sprites/inter pets/vegimon/vegimon.png', 'sprites/inter pets/vegimon/vegimon 3.png'],
+			sleep: 'sprites/inter pets/vegimon/vegimon 4.png',
+			canEvolve: false
+        },
+		mamemon: {
+			walk: ['sprites/inter pets/mamemon/mamemon.png', 'sprites/inter pets/mamemon/mamemon 2.png'],
+			happiness: ['sprites/inter pets/mamemon/mamemon.png', 'sprites/inter pets/mamemon/mamemon 3.png'],
+			sleep: 'sprites/inter pets/mamemon/mamemon 4.png',
+			canEvolve: true,
+			evolution: 'monzaemon'
+        },
+		monzaemon: {
+			walk: ['sprites/inter pets/monzaemon/monzaemon.png', 'sprites/inter pets/monzaemon/monzaemon 2.png'],
+			happiness: ['sprites/inter pets/monzaemon/monzaemon.png', 'sprites/inter pets/monzaemon/monzaemon 3.png'],
+			sleep: 'sprites/inter pets/monzaemon/monzaemon 4.png',
+			canEvolve: true,
+			evolution: 'yukidarumon'
+        },
+		yukidarumon: {
+			walk: ['sprites/inter pets/yukidramon/yukidarumon.png', 'sprites/inter pets/yukidramon/yukidarumon 2.png'],
+			happiness: ['sprites/inter pets/yukidramon/yukidarumon.png', 'sprites/inter pets/yukidramon/yukidarumon 3.png'],
+			sleep: 'sprites/inter pets/yukidramon/yukidarumon 4.png',
+			canEvolve: false
+        },
+		flymon: {
+			walk: ['sprites/inter pets/flymon/flymon.png', 'sprites/inter pets/flymon/flymon 2.png'],
+			happiness: ['sprites/inter pets/flymon/flymon.png', 'sprites/inter pets/flymon/flymon 3.png'],
+			sleep: 'sprites/inter pets/flymon/flymon 4.png',
+			canEvolve: true,
+			evolution: 'piyomon'
         },
 		piyomon: {
 			walk: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 2.png'],
 			happiness: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 3.png'],
 			sleep: 'sprites/inter pets/piyomon/piyomon 4.png',
-			canEvolve: false // Placeholder - to be updated
+			canEvolve: true,
+			evolution: 'birdramon'
+        },
+		birdramon: {
+			walk: ['sprites/inter pets/birdramon/birdramon.png', 'sprites/inter pets/birdramon/birdramon 2.png'],
+			happiness: ['sprites/inter pets/birdramon/birdramon.png', 'sprites/inter pets/birdramon/birdramon 3.png'],
+			sleep: 'sprites/inter pets/birdramon/birdramon 4.png',
+			canEvolve: false
         }
     };
     
