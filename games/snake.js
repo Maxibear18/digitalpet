@@ -1,4 +1,20 @@
 const { ipcRenderer } = require('electron');
+const path = require('path');
+
+// Store app path from main process
+let appPath = process.cwd();
+
+ipcRenderer.once('game:appPath', (_event, receivedAppPath) => {
+    appPath = receivedAppPath;
+});
+
+// Helper function to resolve sprite paths correctly
+function resolveSpritePath(relativePath) {
+    const cleanPath = relativePath.replace(/^\.\.\/\.\.\//, '').replace(/^\.\.\//, '');
+    const absolutePath = path.resolve(appPath, cleanPath);
+    const normalizedPath = absolutePath.replace(/\\/g, '/');
+    return 'file:///' + normalizedPath;
+}
 
 let playerMoney = 0;
 let gameActive = false;
@@ -75,124 +91,124 @@ resizeCanvas();
 function loadPetSprites() {
     const PET_TYPES = {
         botamon: {
-            walk: ['sprites/basic pets/botamon/botamon.png', 'sprites/basic pets/botamon/botamon 2.png'],
+            walk: ['../../sprites/basic pets/botamon/botamon.png', '../../sprites/basic pets/botamon/botamon 2.png'],
             evolution: 'koromon'
         },
         poyomon: {
-            walk: ['sprites/basic pets/poyomon/poyomon.png', 'sprites/basic pets/poyomon/poyomon 2.png'],
+            walk: ['../../sprites/basic pets/poyomon/poyomon.png', '../../sprites/basic pets/poyomon/poyomon 2.png'],
             evolution: 'tokomon'
         },
         punimon: {
-            walk: ['sprites/basic pets/punimon/punimon.png', 'sprites/basic pets/punimon/punimon 2.png'],
+            walk: ['../../sprites/basic pets/punimon/punimon.png', '../../sprites/basic pets/punimon/punimon 2.png'],
             evolution: 'tsunomon'
         },
         pitchmon: {
-            walk: ['sprites/basic pets/pitchmon/pitchmon.png', 'sprites/basic pets/pitchmon/pitchmon 2.png'],
+            walk: ['../../sprites/basic pets/pitchmon/pitchmon.png', '../../sprites/basic pets/pitchmon/pitchmon 2.png'],
             evolution: 'pakumon'
         },
         koromon: {
-            walk: ['sprites/basic pets/koromon/koromon.png', 'sprites/basic pets/koromon/koromon 2.png'],
+            walk: ['../../sprites/basic pets/koromon/koromon.png', '../../sprites/basic pets/koromon/koromon 2.png'],
             evolution: 'agumon'
         },
         tokomon: {
-            walk: ['sprites/basic pets/tokomon/tokomon.png', 'sprites/basic pets/tokomon/tokomon 2.png'],
+            walk: ['../../sprites/basic pets/tokomon/tokomon.png', '../../sprites/basic pets/tokomon/tokomon 2.png'],
             evolution: 'patamon'
         },
         tsunomon: {
-            walk: ['sprites/basic pets/tsunomon/tsunomon.png', 'sprites/basic pets/tsunomon/tsunomon 2.png'],
+            walk: ['../../sprites/basic pets/tsunomon/tsunomon.png', '../../sprites/basic pets/tsunomon/tsunomon 2.png'],
             evolution: 'gabumon'
         },
         pakumon: {
-            walk: ['sprites/basic pets/pakumon/pakumon.png', 'sprites/basic pets/pakumon/pakumon 2.png'],
+            walk: ['../../sprites/basic pets/pakumon/pakumon.png', '../../sprites/basic pets/pakumon/pakumon 2.png'],
             evolution: 'betamon'
         },
         agumon: {
-            walk: ['sprites/basic pets/agumon/agumon.png', 'sprites/basic pets/agumon/agumon 2.png'],
+            walk: ['../../sprites/basic pets/agumon/agumon.png', '../../sprites/basic pets/agumon/agumon 2.png'],
             evolution: 'greymon'
         },
         betamon: {
-            walk: ['sprites/basic pets/betamon/betamon.png', 'sprites/basic pets/betamon/betamon 2.png'],
+            walk: ['../../sprites/basic pets/betamon/betamon.png', '../../sprites/basic pets/betamon/betamon 2.png'],
             evolution: 'seadramon'
         },
         gabumon: {
-            walk: ['sprites/basic pets/gabumon/gabumon.png', 'sprites/basic pets/gabumon/gabumon 2.png'],
+            walk: ['../../sprites/basic pets/gabumon/gabumon.png', '../../sprites/basic pets/gabumon/gabumon 2.png'],
             evolution: 'garurumon'
         },
         patamon: {
-            walk: ['sprites/basic pets/patamon/patamon.png', 'sprites/basic pets/patamon/patamon 2.png'],
+            walk: ['../../sprites/basic pets/patamon/patamon.png', '../../sprites/basic pets/patamon/patamon 2.png'],
             evolution: 'angemon'
         },
         greymon: {
-            walk: ['sprites/basic pets/greymon/greymon.png', 'sprites/basic pets/greymon/greymon 2.png']
+            walk: ['../../sprites/basic pets/greymon/greymon.png', '../../sprites/basic pets/greymon/greymon 2.png']
         },
         garurumon: {
-            walk: ['sprites/basic pets/garurumon/garurumon.png', 'sprites/basic pets/garurumon/garurumon 2.png']
+            walk: ['../../sprites/basic pets/garurumon/garurumon.png', '../../sprites/basic pets/garurumon/garurumon 2.png']
         },
         angemon: {
-            walk: ['sprites/basic pets/angemon/angemon.png', 'sprites/basic pets/angemon/angemon 2.png']
+            walk: ['../../sprites/basic pets/angemon/angemon.png', '../../sprites/basic pets/angemon/angemon 2.png']
         },
         seadramon: {
-            walk: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 2.png']
+            walk: ['../../sprites/basic pets/seadramon/seadramon.png', '../../sprites/basic pets/seadramon/seadramon 2.png']
         },
         giromon: {
-            walk: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 2.png'],
+            walk: ['../../sprites/inter pets/giromon/giromon.png', '../../sprites/inter pets/giromon/giromon 2.png'],
             evolution: 'mamemon'
         },
         zurumon: {
-            walk: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 2.png'],
+            walk: ['../../sprites/inter pets/zurumon/zurumon.png', '../../sprites/inter pets/zurumon/zurumon 2.png'],
             evolution: 'pagumon'
         },
         yuramon: {
-            walk: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 2.png'],
+            walk: ['../../sprites/inter pets/yuramon/yuramon.png', '../../sprites/inter pets/yuramon/yuramon 2.png'],
             evolution: 'tanemon'
         },
         pixiemon: {
-            walk: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 2.png'],
+            walk: ['../../sprites/inter pets/pixiemon/pixiemon.png', '../../sprites/inter pets/pixiemon/pixiemon 2.png'],
             evolution: 'flymon'
         },
         pagumon: {
-            walk: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 2.png'],
+            walk: ['../../sprites/inter pets/pagumon/pagumon.png', '../../sprites/inter pets/pagumon/pagumon 2.png'],
             evolution: 'gazimon'
         },
         gazimon: {
-            walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
+            walk: ['../../sprites/inter pets/gazimon/gazimon.png', '../../sprites/inter pets/gazimon/gazimon 2.png'],
             evolution: 'gizamon'
         },
         gizamon: {
-            walk: ['sprites/inter pets/gizamon/gizamon.png', 'sprites/inter pets/gizamon/gizamon 2.png']
+            walk: ['../../sprites/inter pets/gizamon/gizamon.png', '../../sprites/inter pets/gizamon/gizamon 2.png']
         },
         tanemon: {
-            walk: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 2.png'],
+            walk: ['../../sprites/inter pets/tanemon/tanemon.png', '../../sprites/inter pets/tanemon/tanemon 2.png'],
             evolution: 'palmon'
         },
         palmon: {
-            walk: ['sprites/inter pets/palmon/palmon.png', 'sprites/inter pets/palmon/palmon 2.png'],
+            walk: ['../../sprites/inter pets/palmon/palmon.png', '../../sprites/inter pets/palmon/palmon 2.png'],
             evolution: 'vegimon'
         },
         vegimon: {
-            walk: ['sprites/inter pets/vegimon/vegimon.png', 'sprites/inter pets/vegimon/vegimon 2.png']
+            walk: ['../../sprites/inter pets/vegimon/vegimon.png', '../../sprites/inter pets/vegimon/vegimon 2.png']
         },
         mamemon: {
-            walk: ['sprites/inter pets/mamemon/mamemon.png', 'sprites/inter pets/mamemon/mamemon 2.png'],
+            walk: ['../../sprites/inter pets/mamemon/mamemon.png', '../../sprites/inter pets/mamemon/mamemon 2.png'],
             evolution: 'monzaemon'
         },
         monzaemon: {
-            walk: ['sprites/inter pets/monzaemon/monzaemon.png', 'sprites/inter pets/monzaemon/monzaemon 2.png'],
+            walk: ['../../sprites/inter pets/monzaemon/monzaemon.png', '../../sprites/inter pets/monzaemon/monzaemon 2.png'],
             evolution: 'yukidarumon'
         },
         yukidarumon: {
-            walk: ['sprites/inter pets/yukidramon/yukidarumon.png', 'sprites/inter pets/yukidramon/yukidarumon 2.png']
+            walk: ['../../sprites/inter pets/yukidramon/yukidarumon.png', '../../sprites/inter pets/yukidramon/yukidarumon 2.png']
         },
         flymon: {
-            walk: ['sprites/inter pets/flymon/flymon.png', 'sprites/inter pets/flymon/flymon 2.png'],
+            walk: ['../../sprites/inter pets/flymon/flymon.png', '../../sprites/inter pets/flymon/flymon 2.png'],
             evolution: 'piyomon'
         },
         piyomon: {
-            walk: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 2.png'],
+            walk: ['../../sprites/inter pets/piyomon/piyomon.png', '../../sprites/inter pets/piyomon/piyomon 2.png'],
             evolution: 'birdramon'
         },
         birdramon: {
-            walk: ['sprites/inter pets/birdramon/birdramon.png', 'sprites/inter pets/birdramon/birdramon 2.png']
+            walk: ['../../sprites/inter pets/birdramon/birdramon.png', '../../sprites/inter pets/birdramon/birdramon 2.png']
         }
     };
     
@@ -214,11 +230,11 @@ function loadPetSprites() {
     
     // Load sprites
     const headImg = new Image();
-    headImg.src = encodeURI(petData.walk[0]);
+    headImg.src = resolveSpritePath(petData.walk[0]);
     petSprites.head = headImg;
     
     const bodyImg = new Image();
-    bodyImg.src = encodeURI(petData.walk[1] || petData.walk[0]);
+    bodyImg.src = resolveSpritePath(petData.walk[1] || petData.walk[0]);
     petSprites.body = bodyImg;
     
     // Load different pet types for body segments
@@ -234,14 +250,14 @@ function loadPetSprites() {
         const bodyPetData = PET_TYPES[petTypeKey];
         if (bodyPetData) {
             const bodyPetImg = new Image();
-            bodyPetImg.src = encodeURI(bodyPetData.walk[0]);
+            bodyPetImg.src = resolveSpritePath(bodyPetData.walk[0]);
             petSprites.bodyPets.push(bodyPetImg);
         }
     });
     
     // Load food image
     const foodImg = new Image();
-    foodImg.src = 'sprites/food/cherry.png';
+    foodImg.src = resolveSpritePath('../../sprites/food/cherry.png');
     foodImage = foodImg;
 }
 

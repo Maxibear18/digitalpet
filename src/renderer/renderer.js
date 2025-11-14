@@ -56,250 +56,250 @@ const FOOD_TYPES = {
 const PET_TYPES = {
     botamon: {
         name: 'Botamon',
-		walk: ['sprites/basic pets/botamon/botamon.png', 'sprites/basic pets/botamon/botamon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/botamon/botamon.png', 'sprites/basic pets/botamon/botamon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/botamon/botamon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/botamon/botamon.png', '../sprites/basic pets/botamon/botamon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/botamon/botamon.png', '../sprites/basic pets/botamon/botamon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/botamon/botamon 4.png', // Sprite 4
 		canEvolve: true,
         evolution: 'koromon' // Evolves into Koromon
     },
     poyomon: {
         name: 'Poyomon',
-		walk: ['sprites/basic pets/poyomon/poyomon.png', 'sprites/basic pets/poyomon/poyomon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/poyomon/poyomon.png', 'sprites/basic pets/poyomon/poyomon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/poyomon/poyomon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/poyomon/poyomon.png', '../sprites/basic pets/poyomon/poyomon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/poyomon/poyomon.png', '../sprites/basic pets/poyomon/poyomon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/poyomon/poyomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'tokomon'
     },
     punimon: {
         name: 'Punimon',
-		walk: ['sprites/basic pets/punimon/punimon.png', 'sprites/basic pets/punimon/punimon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/punimon/punimon.png', 'sprites/basic pets/punimon/punimon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/punimon/punimon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/punimon/punimon.png', '../sprites/basic pets/punimon/punimon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/punimon/punimon.png', '../sprites/basic pets/punimon/punimon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/punimon/punimon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'tsunomon'
     },
     pitchmon: {
         name: 'Pitchmon',
-		walk: ['sprites/basic pets/pitchmon/pitchmon.png', 'sprites/basic pets/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/pitchmon/pitchmon.png', 'sprites/basic pets/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/pitchmon/pitchmon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/pitchmon/pitchmon.png', '../sprites/basic pets/pitchmon/pitchmon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/pitchmon/pitchmon.png', '../sprites/basic pets/pitchmon/pitchmon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/pitchmon/pitchmon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'pakumon'
     },
     koromon: {
         name: 'Koromon',
-		walk: ['sprites/basic pets/koromon/koromon.png', 'sprites/basic pets/koromon/koromon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/koromon/koromon.png', 'sprites/basic pets/koromon/koromon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/koromon/koromon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/koromon/koromon.png', '../sprites/basic pets/koromon/koromon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/koromon/koromon.png', '../sprites/basic pets/koromon/koromon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/koromon/koromon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'agumon'
 	},
 	tokomon: {
 		name: 'Tokomon',
-		walk: ['sprites/basic pets/tokomon/tokomon.png', 'sprites/basic pets/tokomon/tokomon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/tokomon/tokomon.png', 'sprites/basic pets/tokomon/tokomon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/tokomon/tokomon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/tokomon/tokomon.png', '../sprites/basic pets/tokomon/tokomon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/tokomon/tokomon.png', '../sprites/basic pets/tokomon/tokomon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/tokomon/tokomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'patamon'
 	},
 	tsunomon: {
 		name: 'Tsunomon',
-		walk: ['sprites/basic pets/tsunomon/tsunomon.png', 'sprites/basic pets/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/tsunomon/tsunomon.png', 'sprites/basic pets/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/tsunomon/tsunomon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/tsunomon/tsunomon.png', '../sprites/basic pets/tsunomon/tsunomon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/tsunomon/tsunomon.png', '../sprites/basic pets/tsunomon/tsunomon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/tsunomon/tsunomon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'gabumon'
 	},
 	pakumon: {
 		name: 'Pakumon',
-		walk: ['sprites/basic pets/pakumon/pakumon.png', 'sprites/basic pets/pakumon/pakumon 2.png'], // Sprite 1 and 2
-		happiness: ['sprites/basic pets/pakumon/pakumon.png', 'sprites/basic pets/pakumon/pakumon 3.png'], // Sprite 1 and 3
-		sleep: 'sprites/basic pets/pakumon/pakumon 4.png', // Sprite 4
+		walk: ['../sprites/basic pets/pakumon/pakumon.png', '../sprites/basic pets/pakumon/pakumon 2.png'], // Sprite 1 and 2
+		happiness: ['../sprites/basic pets/pakumon/pakumon.png', '../sprites/basic pets/pakumon/pakumon 3.png'], // Sprite 1 and 3
+		sleep: '../sprites/basic pets/pakumon/pakumon 4.png', // Sprite 4
 		canEvolve: true,
 		evolution: 'betamon'
 	},
 	agumon: {
 		name: 'Agumon',
-		walk: ['sprites/basic pets/agumon/agumon.png', 'sprites/basic pets/agumon/agumon 2.png'],
-		happiness: ['sprites/basic pets/agumon/agumon.png', 'sprites/basic pets/agumon/agumon 3.png'],
-		sleep: 'sprites/basic pets/agumon/agumon 4.png',
+		walk: ['../sprites/basic pets/agumon/agumon.png', '../sprites/basic pets/agumon/agumon 2.png'],
+		happiness: ['../sprites/basic pets/agumon/agumon.png', '../sprites/basic pets/agumon/agumon 3.png'],
+		sleep: '../sprites/basic pets/agumon/agumon 4.png',
 		canEvolve: true,
 		evolution: 'greymon'
 	},
 	betamon: {
 		name: 'Betamon',
-		walk: ['sprites/basic pets/betamon/betamon.png', 'sprites/basic pets/betamon/betamon 2.png'],
-		happiness: ['sprites/basic pets/betamon/betamon.png', 'sprites/basic pets/betamon/betamon 3.png'],
-		sleep: 'sprites/basic pets/betamon/betamon 4.png',
+		walk: ['../sprites/basic pets/betamon/betamon.png', '../sprites/basic pets/betamon/betamon 2.png'],
+		happiness: ['../sprites/basic pets/betamon/betamon.png', '../sprites/basic pets/betamon/betamon 3.png'],
+		sleep: '../sprites/basic pets/betamon/betamon 4.png',
 		canEvolve: true,
 		evolution: 'seadramon'
 	},
 	gabumon: {
 		name: 'Gabumon',
-		walk: ['sprites/basic pets/gabumon/gabumon.png', 'sprites/basic pets/gabumon/gabumon 2.png'],
-		happiness: ['sprites/basic pets/gabumon/gabumon.png', 'sprites/basic pets/gabumon/gabumon 3.png'],
-		sleep: 'sprites/basic pets/gabumon/gabumon 4.png',
+		walk: ['../sprites/basic pets/gabumon/gabumon.png', '../sprites/basic pets/gabumon/gabumon 2.png'],
+		happiness: ['../sprites/basic pets/gabumon/gabumon.png', '../sprites/basic pets/gabumon/gabumon 3.png'],
+		sleep: '../sprites/basic pets/gabumon/gabumon 4.png',
 		canEvolve: true,
 		evolution: 'garurumon'
 	},
 	patamon: {
 		name: 'Patamon',
-		walk: ['sprites/basic pets/patamon/patamon.png', 'sprites/basic pets/patamon/patamon 2.png'],
-		happiness: ['sprites/basic pets/patamon/patamon.png', 'sprites/basic pets/patamon/patamon 3.png'],
-		sleep: 'sprites/basic pets/patamon/patamon 4.png',
+		walk: ['../sprites/basic pets/patamon/patamon.png', '../sprites/basic pets/patamon/patamon 2.png'],
+		happiness: ['../sprites/basic pets/patamon/patamon.png', '../sprites/basic pets/patamon/patamon 3.png'],
+		sleep: '../sprites/basic pets/patamon/patamon 4.png',
 		canEvolve: true,
 		evolution: 'angemon'
 	},
 	greymon: {
 		name: 'Greymon',
-		walk: ['sprites/basic pets/greymon/greymon.png', 'sprites/basic pets/greymon/greymon 2.png'],
-		happiness: ['sprites/basic pets/greymon/greymon.png', 'sprites/basic pets/greymon/greymon 3.png'],
-		sleep: 'sprites/basic pets/greymon/greymon 4.png',
+		walk: ['../sprites/basic pets/greymon/greymon.png', '../sprites/basic pets/greymon/greymon 2.png'],
+		happiness: ['../sprites/basic pets/greymon/greymon.png', '../sprites/basic pets/greymon/greymon 3.png'],
+		sleep: '../sprites/basic pets/greymon/greymon 4.png',
 		canEvolve: false
 	},
 	garurumon: {
 		name: 'Garurumon',
-		walk: ['sprites/basic pets/garurumon/garurumon.png', 'sprites/basic pets/garurumon/garurumon 2.png'],
-		happiness: ['sprites/basic pets/garurumon/garurumon.png', 'sprites/basic pets/garurumon/garurumon 3.png'],
-		sleep: 'sprites/basic pets/garurumon/garurumon 4.png',
+		walk: ['../sprites/basic pets/garurumon/garurumon.png', '../sprites/basic pets/garurumon/garurumon 2.png'],
+		happiness: ['../sprites/basic pets/garurumon/garurumon.png', '../sprites/basic pets/garurumon/garurumon 3.png'],
+		sleep: '../sprites/basic pets/garurumon/garurumon 4.png',
 		canEvolve: false
 	},
 	angemon: {
 		name: 'Angemon',
-		walk: ['sprites/basic pets/angemon/angemon.png', 'sprites/basic pets/angemon/angemon 2.png'],
-		happiness: ['sprites/basic pets/angemon/angemon.png', 'sprites/basic pets/angemon/angemon 3.png'],
-		sleep: 'sprites/basic pets/angemon/angemon 4.png',
+		walk: ['../sprites/basic pets/angemon/angemon.png', '../sprites/basic pets/angemon/angemon 2.png'],
+		happiness: ['../sprites/basic pets/angemon/angemon.png', '../sprites/basic pets/angemon/angemon 3.png'],
+		sleep: '../sprites/basic pets/angemon/angemon 4.png',
 		canEvolve: false
 	},
 	seadramon: {
 		name: 'Seadramon',
-		walk: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 2.png'],
-		happiness: ['sprites/basic pets/seadramon/seadramon.png', 'sprites/basic pets/seadramon/seadramon 3.png'],
-		sleep: 'sprites/basic pets/seadramon/seadramon 4.png',
+		walk: ['../sprites/basic pets/seadramon/seadramon.png', '../sprites/basic pets/seadramon/seadramon 2.png'],
+		happiness: ['../sprites/basic pets/seadramon/seadramon.png', '../sprites/basic pets/seadramon/seadramon 3.png'],
+		sleep: '../sprites/basic pets/seadramon/seadramon 4.png',
 		canEvolve: false
     },
 	giromon: {
 		name: 'Giromon',
-		walk: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 2.png'],
-		happiness: ['sprites/inter pets/giromon/giromon.png', 'sprites/inter pets/giromon/giromon 3.png'],
-		sleep: 'sprites/inter pets/giromon/giromon 4.png',
+		walk: ['../sprites/inter pets/giromon/giromon.png', '../sprites/inter pets/giromon/giromon 2.png'],
+		happiness: ['../sprites/inter pets/giromon/giromon.png', '../sprites/inter pets/giromon/giromon 3.png'],
+		sleep: '../sprites/inter pets/giromon/giromon 4.png',
 		canEvolve: true,
 		evolution: 'mamemon'
     },
 	zurumon: {
 		name: 'Zurumon',
-		walk: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 2.png'],
-		happiness: ['sprites/inter pets/zurumon/zurumon.png', 'sprites/inter pets/zurumon/zurumon 3.png'],
-		sleep: 'sprites/inter pets/zurumon/zurumon 4.png',
+		walk: ['../sprites/inter pets/zurumon/zurumon.png', '../sprites/inter pets/zurumon/zurumon 2.png'],
+		happiness: ['../sprites/inter pets/zurumon/zurumon.png', '../sprites/inter pets/zurumon/zurumon 3.png'],
+		sleep: '../sprites/inter pets/zurumon/zurumon 4.png',
 		canEvolve: true,
 		evolution: 'pagumon'
     },
 	yuramon: {
 		name: 'Yuramon',
-		walk: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 2.png'],
-		happiness: ['sprites/inter pets/yuramon/yuramon.png', 'sprites/inter pets/yuramon/yuramon 3.png'],
-		sleep: 'sprites/inter pets/yuramon/yuramon 4.png',
+		walk: ['../sprites/inter pets/yuramon/yuramon.png', '../sprites/inter pets/yuramon/yuramon 2.png'],
+		happiness: ['../sprites/inter pets/yuramon/yuramon.png', '../sprites/inter pets/yuramon/yuramon 3.png'],
+		sleep: '../sprites/inter pets/yuramon/yuramon 4.png',
 		canEvolve: true,
 		evolution: 'tanemon'
     },
 	pixiemon: {
 		name: 'Pixiemon',
-		walk: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 2.png'],
-		happiness: ['sprites/inter pets/pixiemon/pixiemon.png', 'sprites/inter pets/pixiemon/pixiemon 3.png'],
-		sleep: 'sprites/inter pets/pixiemon/pixiemon 4.png',
+		walk: ['../sprites/inter pets/pixiemon/pixiemon.png', '../sprites/inter pets/pixiemon/pixiemon 2.png'],
+		happiness: ['../sprites/inter pets/pixiemon/pixiemon.png', '../sprites/inter pets/pixiemon/pixiemon 3.png'],
+		sleep: '../sprites/inter pets/pixiemon/pixiemon 4.png',
 		canEvolve: true,
 		evolution: 'flymon'
     },
 	pagumon: {
 		name: 'Pagumon',
-		walk: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 2.png'],
-		happiness: ['sprites/inter pets/pagumon/pagumon.png', 'sprites/inter pets/pagumon/pagumon 3.png'],
-		sleep: 'sprites/inter pets/pagumon/pagumon 4.png',
+		walk: ['../sprites/inter pets/pagumon/pagumon.png', '../sprites/inter pets/pagumon/pagumon 2.png'],
+		happiness: ['../sprites/inter pets/pagumon/pagumon.png', '../sprites/inter pets/pagumon/pagumon 3.png'],
+		sleep: '../sprites/inter pets/pagumon/pagumon 4.png',
 		canEvolve: true,
 		evolution: 'gazimon'
     },
 	gazimon: {
 		name: 'Gazimon',
-		walk: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 2.png'],
-		happiness: ['sprites/inter pets/gazimon/gazimon.png', 'sprites/inter pets/gazimon/gazimon 3.png'],
-		sleep: 'sprites/inter pets/gazimon/gazimon 4.png',
+		walk: ['../sprites/inter pets/gazimon/gazimon.png', '../sprites/inter pets/gazimon/gazimon 2.png'],
+		happiness: ['../sprites/inter pets/gazimon/gazimon.png', '../sprites/inter pets/gazimon/gazimon 3.png'],
+		sleep: '../sprites/inter pets/gazimon/gazimon 4.png',
 		canEvolve: true,
 		evolution: 'gizamon'
     },
 	gizamon: {
 		name: 'Gizamon',
-		walk: ['sprites/inter pets/gizamon/gizamon.png', 'sprites/inter pets/gizamon/gizamon 2.png'],
-		happiness: ['sprites/inter pets/gizamon/gizamon.png', 'sprites/inter pets/gizamon/gizamon 3.png'],
-		sleep: 'sprites/inter pets/gizamon/gizamon 4.png',
+		walk: ['../sprites/inter pets/gizamon/gizamon.png', '../sprites/inter pets/gizamon/gizamon 2.png'],
+		happiness: ['../sprites/inter pets/gizamon/gizamon.png', '../sprites/inter pets/gizamon/gizamon 3.png'],
+		sleep: '../sprites/inter pets/gizamon/gizamon 4.png',
 		canEvolve: false
     },
 	tanemon: {
 		name: 'Tanemon',
-		walk: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 2.png'],
-		happiness: ['sprites/inter pets/tanemon/tanemon.png', 'sprites/inter pets/tanemon/tanemon 3.png'],
-		sleep: 'sprites/inter pets/tanemon/tanemon 4.png',
+		walk: ['../sprites/inter pets/tanemon/tanemon.png', '../sprites/inter pets/tanemon/tanemon 2.png'],
+		happiness: ['../sprites/inter pets/tanemon/tanemon.png', '../sprites/inter pets/tanemon/tanemon 3.png'],
+		sleep: '../sprites/inter pets/tanemon/tanemon 4.png',
 		canEvolve: true,
 		evolution: 'palmon'
     },
 	palmon: {
 		name: 'Palmon',
-		walk: ['sprites/inter pets/palmon/palmon.png', 'sprites/inter pets/palmon/palmon 2.png'],
-		happiness: ['sprites/inter pets/palmon/palmon.png', 'sprites/inter pets/palmon/palmon 3.png'],
-		sleep: 'sprites/inter pets/palmon/palmon 4.png',
+		walk: ['../sprites/inter pets/palmon/palmon.png', '../sprites/inter pets/palmon/palmon 2.png'],
+		happiness: ['../sprites/inter pets/palmon/palmon.png', '../sprites/inter pets/palmon/palmon 3.png'],
+		sleep: '../sprites/inter pets/palmon/palmon 4.png',
 		canEvolve: true,
 		evolution: 'vegimon'
     },
 	vegimon: {
 		name: 'Vegimon',
-		walk: ['sprites/inter pets/vegimon/vegimon.png', 'sprites/inter pets/vegimon/vegimon 2.png'],
-		happiness: ['sprites/inter pets/vegimon/vegimon.png', 'sprites/inter pets/vegimon/vegimon 3.png'],
-		sleep: 'sprites/inter pets/vegimon/vegimon 4.png',
+		walk: ['../sprites/inter pets/vegimon/vegimon.png', '../sprites/inter pets/vegimon/vegimon 2.png'],
+		happiness: ['../sprites/inter pets/vegimon/vegimon.png', '../sprites/inter pets/vegimon/vegimon 3.png'],
+		sleep: '../sprites/inter pets/vegimon/vegimon 4.png',
 		canEvolve: false
     },
 	mamemon: {
 		name: 'Mamemon',
-		walk: ['sprites/inter pets/mamemon/mamemon.png', 'sprites/inter pets/mamemon/mamemon 2.png'],
-		happiness: ['sprites/inter pets/mamemon/mamemon.png', 'sprites/inter pets/mamemon/mamemon 3.png'],
-		sleep: 'sprites/inter pets/mamemon/mamemon 4.png',
+		walk: ['../sprites/inter pets/mamemon/mamemon.png', '../sprites/inter pets/mamemon/mamemon 2.png'],
+		happiness: ['../sprites/inter pets/mamemon/mamemon.png', '../sprites/inter pets/mamemon/mamemon 3.png'],
+		sleep: '../sprites/inter pets/mamemon/mamemon 4.png',
 		canEvolve: true,
 		evolution: 'monzaemon'
     },
 	monzaemon: {
 		name: 'Monzaemon',
-		walk: ['sprites/inter pets/monzaemon/monzaemon.png', 'sprites/inter pets/monzaemon/monzaemon 2.png'],
-		happiness: ['sprites/inter pets/monzaemon/monzaemon.png', 'sprites/inter pets/monzaemon/monzaemon 3.png'],
-		sleep: 'sprites/inter pets/monzaemon/monzaemon 4.png',
+		walk: ['../sprites/inter pets/monzaemon/monzaemon.png', '../sprites/inter pets/monzaemon/monzaemon 2.png'],
+		happiness: ['../sprites/inter pets/monzaemon/monzaemon.png', '../sprites/inter pets/monzaemon/monzaemon 3.png'],
+		sleep: '../sprites/inter pets/monzaemon/monzaemon 4.png',
 		canEvolve: true,
 		evolution: 'yukidarumon'
     },
 	yukidarumon: {
 		name: 'Yukidarumon',
-		walk: ['sprites/inter pets/yukidramon/yukidarumon.png', 'sprites/inter pets/yukidramon/yukidarumon 2.png'],
-		happiness: ['sprites/inter pets/yukidramon/yukidarumon.png', 'sprites/inter pets/yukidramon/yukidarumon 3.png'],
-		sleep: 'sprites/inter pets/yukidramon/yukidarumon 4.png',
+		walk: ['../sprites/inter pets/yukidramon/yukidarumon.png', '../sprites/inter pets/yukidramon/yukidarumon 2.png'],
+		happiness: ['../sprites/inter pets/yukidramon/yukidarumon.png', '../sprites/inter pets/yukidramon/yukidarumon 3.png'],
+		sleep: '../sprites/inter pets/yukidramon/yukidarumon 4.png',
 		canEvolve: false
     },
 	flymon: {
 		name: 'Flymon',
-		walk: ['sprites/inter pets/flymon/flymon.png', 'sprites/inter pets/flymon/flymon 2.png'],
-		happiness: ['sprites/inter pets/flymon/flymon.png', 'sprites/inter pets/flymon/flymon 3.png'],
-		sleep: 'sprites/inter pets/flymon/flymon 4.png',
+		walk: ['../sprites/inter pets/flymon/flymon.png', '../sprites/inter pets/flymon/flymon 2.png'],
+		happiness: ['../sprites/inter pets/flymon/flymon.png', '../sprites/inter pets/flymon/flymon 3.png'],
+		sleep: '../sprites/inter pets/flymon/flymon 4.png',
 		canEvolve: true,
 		evolution: 'piyomon'
     },
 	piyomon: {
 		name: 'Piyomon',
-		walk: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 2.png'],
-		happiness: ['sprites/inter pets/piyomon/piyomon.png', 'sprites/inter pets/piyomon/piyomon 3.png'],
-		sleep: 'sprites/inter pets/piyomon/piyomon 4.png',
+		walk: ['../sprites/inter pets/piyomon/piyomon.png', '../sprites/inter pets/piyomon/piyomon 2.png'],
+		happiness: ['../sprites/inter pets/piyomon/piyomon.png', '../sprites/inter pets/piyomon/piyomon 3.png'],
+		sleep: '../sprites/inter pets/piyomon/piyomon 4.png',
 		canEvolve: true,
 		evolution: 'birdramon'
     },
 	birdramon: {
 		name: 'Birdramon',
-		walk: ['sprites/inter pets/birdramon/birdramon.png', 'sprites/inter pets/birdramon/birdramon 2.png'],
-		happiness: ['sprites/inter pets/birdramon/birdramon.png', 'sprites/inter pets/birdramon/birdramon 3.png'],
-		sleep: 'sprites/inter pets/birdramon/birdramon 4.png',
+		walk: ['../sprites/inter pets/birdramon/birdramon.png', '../sprites/inter pets/birdramon/birdramon 2.png'],
+		happiness: ['../sprites/inter pets/birdramon/birdramon.png', '../sprites/inter pets/birdramon/birdramon 3.png'],
+		sleep: '../sprites/inter pets/birdramon/birdramon 4.png',
 		canEvolve: false
     }
 };
@@ -3497,7 +3497,7 @@ function stopSleeping() {
 
 // Waste spawning system
 const WASTE_SPAWN_INTERVAL = 150000; // 2.5 minutes in milliseconds (reduced by 30 seconds)
-const wasteSpritePath = 'sprites/items/waste.png';
+const wasteSpritePath = '../sprites/items/waste.png';
 
 // Start waste spawning system - pet leaves waste every 2.5 minutes
 function startWasteSpawning() {

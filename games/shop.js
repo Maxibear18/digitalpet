@@ -49,8 +49,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     function getSellSpriteFor(typeKey, stage) {
         // Map minimal walk sprites for preview
-        const baseBasic = 'sprites/basic pets';
-        const baseInter = 'sprites/inter pets';
+        const baseBasic = '../sprites/basic pets';
+        const baseInter = '../sprites/inter pets';
         const MAP = {
             botamon: [`${baseBasic}/botamon/botamon.png`],
             poyomon: [`${baseBasic}/poyomon/poyomon.png`],
@@ -319,7 +319,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'cherry',
                     foodType: 'cherry',
                     foodCost: cost,
-                    imagePath: 'sprites/food/cherry.png'
+                    imagePath: '../sprites/food/cherry.png'
                 });
             } else if (item === 'riceball') {
                 ipcRenderer.send('shop:buy', {
@@ -327,7 +327,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'riceball',
                     foodType: 'riceball',
                     foodCost: cost,
-                    imagePath: 'sprites/food/riceball.png'
+                    imagePath: '../sprites/food/riceball.png'
                 });
             } else if (item === 'sandwich') {
                 ipcRenderer.send('shop:buy', {
@@ -335,7 +335,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'sandwich',
                     foodType: 'sandwich',
                     foodCost: cost,
-                    imagePath: 'sprites/food/sandwich.png'
+                    imagePath: '../sprites/food/sandwich.png'
                 });
             } else if (item === 'meat') {
                 ipcRenderer.send('shop:buy', {
@@ -343,7 +343,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'meat',
                     foodType: 'meat',
                     foodCost: cost,
-                    imagePath: 'sprites/food/Food1.png'
+                    imagePath: '../sprites/food/Food1.png'
                 });
             } else if (item === 'cake') {
                 ipcRenderer.send('shop:buy', {
@@ -351,7 +351,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'cake',
                     foodType: 'cake',
                     foodCost: cost,
-                    imagePath: 'sprites/food/cake.png'
+                    imagePath: '../sprites/food/cake.png'
                 });
             } else if (item === 'icecream') {
                 ipcRenderer.send('shop:buy', {
@@ -359,7 +359,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'icecream',
                     foodType: 'icecream',
                     foodCost: cost,
-                    imagePath: 'sprites/food/ice cream.png'
+                    imagePath: '../sprites/food/ice cream.png'
                 });
             } else if (item === 'coffee') {
                 ipcRenderer.send('shop:buy', {
@@ -367,21 +367,21 @@ window.addEventListener('DOMContentLoaded', () => {
                     id: 'coffee',
                     foodType: 'coffee',
                     foodCost: cost,
-                    imagePath: 'sprites/food/coffee.png'
+                    imagePath: '../sprites/food/coffee.png'
                 });
             } else if (item === 'medicine1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'medicine',
                     id: 'medicine1',
                     medicineCost: cost,
-                    imagePath: 'sprites/items/pill.png'
+                    imagePath: '../sprites/items/pill.png'
                 });
             } else if (item === 'medkit1') {
                 ipcRenderer.send('shop:buy', {
                     type: 'medkit',
                     id: 'medkit1',
                     medkitCost: cost,
-                    imagePath: 'sprites/items/medkit.png'
+                    imagePath: '../sprites/items/medkit.png'
                 });
             } else if (item === 'egg1') {
                 // Check if pet already exists or egg already purchased
@@ -392,7 +392,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 ipcRenderer.send('shop:buy', {
                     type: 'egg',
                     id: 'egg1',
-                    imagePath: 'sprites/eggs/digiegg1.png'
+                    imagePath: '../sprites/eggs/digiegg1.png'
                 });
             } else if (item === 'eggInter') {
                 // Check if pet already exists or egg already purchased
@@ -403,49 +403,49 @@ window.addEventListener('DOMContentLoaded', () => {
                 ipcRenderer.send('shop:buy', {
                     type: 'egg',
                     id: 'eggInter',
-                    imagePath: 'sprites/eggs/digiegg inter.png'
+                    imagePath: '../sprites/eggs/digiegg inter.png'
                 });
             } else if (item === 'bubblewand') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'bubblewand',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Bubble Wand.png'
+                    imagePath: '../sprites/toys/Bubble Wand.png'
                 });
             } else if (item === 'calculator') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'calculator',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Calculator.png'
+                    imagePath: '../sprites/toys/Calculator.png'
                 });
             } else if (item === 'chimes') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'chimes',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Chimes.png'
+                    imagePath: '../sprites/toys/Chimes.png'
                 });
             } else if (item === 'musicplayer') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'musicplayer',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Music Player.png'
+                    imagePath: '../sprites/toys/Music Player.png'
                 });
             } else if (item === 'paddle') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'paddle',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Paddle.png'
+                    imagePath: '../sprites/toys/Paddle.png'
                 });
             } else if (item === 'pudding') {
                 ipcRenderer.send('shop:buy', {
                     type: 'toy',
                     id: 'pudding',
                     toyCost: cost,
-                    imagePath: 'sprites/toys/Pudding.png'
+                    imagePath: '../sprites/toys/Pudding.png'
                 });
             } else if (item === 'slotMachine') {
                 ipcRenderer.send('shop:buy', {

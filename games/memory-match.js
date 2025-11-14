@@ -1,4 +1,20 @@
 const { ipcRenderer } = require('electron');
+const path = require('path');
+
+// Store app path from main process
+let appPath = process.cwd();
+
+ipcRenderer.once('game:appPath', (_event, receivedAppPath) => {
+    appPath = receivedAppPath;
+});
+
+// Helper function to resolve sprite paths correctly
+function resolveSpritePath(relativePath) {
+    const cleanPath = relativePath.replace(/^\.\.\/\.\.\//, '').replace(/^\.\.\//, '');
+    const absolutePath = path.resolve(appPath, cleanPath);
+    const normalizedPath = absolutePath.replace(/\\/g, '/');
+    return 'file:///' + normalizedPath;
+}
 
 // Game state
 let cards = [];
@@ -23,15 +39,15 @@ const helpCloseBtn = document.getElementById('helpCloseBtn');
 // Card images - mix of pets and food
 const CARD_IMAGES = [
     // Pet sprites
-    { type: 'pet', path: 'sprites/basic pets/botamon/botamon.png', id: 'botamon' },
-    { type: 'pet', path: 'sprites/basic pets/poyomon/poyomon.png', id: 'poyomon' },
-    { type: 'pet', path: 'sprites/basic pets/punimon/punimon.png', id: 'punimon' },
-    { type: 'pet', path: 'sprites/basic pets/pitchmon/pitchmon.png', id: 'pitchmon' },
+    { type: 'pet', path: '../../sprites/basic pets/botamon/botamon.png', id: 'botamon' },
+    { type: 'pet', path: '../../sprites/basic pets/poyomon/poyomon.png', id: 'poyomon' },
+    { type: 'pet', path: '../../sprites/basic pets/punimon/punimon.png', id: 'punimon' },
+    { type: 'pet', path: '../../sprites/basic pets/pitchmon/pitchmon.png', id: 'pitchmon' },
     // Food sprites
-    { type: 'food', path: 'sprites/food/cherry.png', id: 'cherry' },
-    { type: 'food', path: 'sprites/food/riceball.png', id: 'riceball' },
-    { type: 'food', path: 'sprites/food/sandwich.png', id: 'sandwich' },
-    { type: 'food', path: 'sprites/food/cake.png', id: 'cake' }
+    { type: 'food', path: '../../sprites/food/cherry.png', id: 'cherry' },
+    { type: 'food', path: '../../sprites/food/riceball.png', id: 'riceball' },
+    { type: 'food', path: '../../sprites/food/sandwich.png', id: 'sandwich' },
+    { type: 'food', path: '../../sprites/food/cake.png', id: 'cake' }
 ];
 
 // Initialize game
@@ -92,7 +108,8 @@ function renderCards() {
         const back = document.createElement('div');
         back.className = 'memory-card-back';
     const img = document.createElement('img');
-    img.src = encodeURI(card.path);
+    // Resolve sprite path to absolute file:// URL
+    img.src = resolveSpritePath(card.path);
         img.alt = card.id;
         back.appendChild(img);
         

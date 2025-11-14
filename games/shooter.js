@@ -1,4 +1,20 @@
 const { ipcRenderer } = require('electron');
+const path = require('path');
+
+// Store app path from main process
+let appPath = process.cwd();
+
+ipcRenderer.once('game:appPath', (_event, receivedAppPath) => {
+    appPath = receivedAppPath;
+});
+
+// Helper function to resolve sprite paths correctly
+function resolveSpritePath(relativePath) {
+    const cleanPath = relativePath.replace(/^\.\.\/\.\.\//, '').replace(/^\.\.\//, '');
+    const absolutePath = path.resolve(appPath, cleanPath);
+    const normalizedPath = absolutePath.replace(/\\/g, '/');
+    return 'file:///' + normalizedPath;
+}
 
 let playerMoney = 0;
 let score = 0;
@@ -12,22 +28,22 @@ let spawnInterval = null;
 
 // Food images
 const FOOD_IMAGES = [
-    'sprites/food/cherry.png',
-    'sprites/food/riceball.png',
-    'sprites/food/sandwich.png',
-    'sprites/food/Food1.png',
-    'sprites/food/cake.png',
-    'sprites/food/ice cream.png'
+    '../../sprites/food/cherry.png',
+    '../../sprites/food/riceball.png',
+    '../../sprites/food/sandwich.png',
+    '../../sprites/food/Food1.png',
+    '../../sprites/food/cake.png',
+    '../../sprites/food/ice cream.png'
 ];
 
 // Baby pet images (basic pets only)
 const BABY_PET_IMAGES = [
-    'sprites/basic pets/botamon/botamon.png',
-    'sprites/basic pets/poyomon/poyomon.png',
-    'sprites/basic pets/punimon/punimon.png',
-    'sprites/basic pets/pitchmon/pitchmon.png',
-    'sprites/basic pets/koromon/koromon.png',
-    'sprites/basic pets/tokomon/tokomon.png'
+    '../../sprites/basic pets/botamon/botamon.png',
+    '../../sprites/basic pets/poyomon/poyomon.png',
+    '../../sprites/basic pets/punimon/punimon.png',
+    '../../sprites/basic pets/pitchmon/pitchmon.png',
+    '../../sprites/basic pets/koromon/koromon.png',
+    '../../sprites/basic pets/tokomon/tokomon.png'
 ];
 
 const gameArea = document.getElementById('gameArea');
@@ -122,11 +138,11 @@ function spawnItem(isFood) {
     const img = document.createElement('img');
     if (isFood) {
         const randomFood = FOOD_IMAGES[Math.floor(Math.random() * FOOD_IMAGES.length)];
-        img.src = randomFood;
+        img.src = resolveSpritePath(randomFood);
         item.dataset.type = 'food';
     } else {
         const randomPet = BABY_PET_IMAGES[Math.floor(Math.random() * BABY_PET_IMAGES.length)];
-        img.src = randomPet;
+        img.src = resolveSpritePath(randomPet);
         item.dataset.type = 'pet';
     }
     img.style.width = '50px';

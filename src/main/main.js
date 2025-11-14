@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { loadSave, saveGame, deleteSave } = require('./saveManager');
+const { loadSave, saveGame, deleteSave } = require('../utils/saveManager');
 
 let petWindow;
 let shopWindow;
@@ -371,7 +371,7 @@ function createPetWindow() {
   });
 
   // Load the HTML file
-  petWindow.loadFile('index.html');
+  petWindow.loadFile('windows/index.html');
 
   // Set initial position (center of screen)
   const { screen } = require('electron');
@@ -435,12 +435,12 @@ function createPetWindow() {
           if (!petWindow || petWindow.isDestroyed()) return;
           
           const toyPaths = {
-            pudding: 'sprites/toys/Pudding.png',
-            bubblewand: 'sprites/toys/Bubble Wand.png',
-            chimes: 'sprites/toys/Chimes.png',
-            calculator: 'sprites/toys/Calculator.png',
-            musicplayer: 'sprites/toys/Music Player.png',
-            paddle: 'sprites/toys/Paddle.png'
+            pudding: '../sprites/toys/Pudding.png',
+            bubblewand: '../sprites/toys/Bubble Wand.png',
+            chimes: '../sprites/toys/Chimes.png',
+            calculator: '../sprites/toys/Calculator.png',
+            musicplayer: '../sprites/toys/Music Player.png',
+            paddle: '../sprites/toys/Paddle.png'
           };
           
           activeToys.forEach(toy => {
@@ -671,7 +671,7 @@ function openShopWindow() {
     shopWindow.setMenu(null);
     shopWindow.setMenuBarVisibility(false);
   }
-  shopWindow.loadFile('shop.html');
+  shopWindow.loadFile('windows/shop.html');
   
   // Send initial money to shop window when it's ready
   shopWindow.webContents.once('did-finish-load', () => {
@@ -714,7 +714,7 @@ function openSettingsWindow() {
     settingsWindow.setMenuBarVisibility(false);
   }
   
-  settingsWindow.loadFile('settings.html');
+  settingsWindow.loadFile('windows/settings.html');
   
   settingsWindow.on('closed', () => {
     settingsWindow = null;
@@ -742,7 +742,7 @@ function openGuideWindow() {
     }
   });
   
-  guideWindow.loadFile('guide.html');
+  guideWindow.loadFile('windows/guide.html');
   
   guideWindow.on('closed', () => {
     guideWindow = null;
@@ -772,7 +772,7 @@ function openGamesWindow() {
     gamesWindow.setMenu(null);
     gamesWindow.setMenuBarVisibility(false);
   }
-  gamesWindow.loadFile('games.html');
+  gamesWindow.loadFile('windows/games.html');
   
   // Send purchased games state when games window is ready
   gamesWindow.webContents.once('did-finish-load', () => {
@@ -807,7 +807,7 @@ function openStatsWindow() {
     statsWindow.setMenu(null);
     statsWindow.setMenuBarVisibility(false);
   }
-  statsWindow.loadFile('stats.html');
+  statsWindow.loadFile('windows/stats.html');
   
   // Send all stored stats to the window once it's ready
   statsWindow.webContents.once('did-finish-load', () => {
@@ -1074,7 +1074,7 @@ function openNameDialog() {
     }
   });
 
-  nameDialogWindow.loadFile('name-dialog.html');
+  nameDialogWindow.loadFile('windows/name-dialog.html');
 
   // Center the dialog on the screen
   const { screen } = require('electron');
@@ -1523,11 +1523,13 @@ function openSimonSaysWindow() {
     simonSaysWindow.setMenu(null);
     simonSaysWindow.setMenuBarVisibility(false);
   }
-  simonSaysWindow.loadFile('simon-says.html');
+  simonSaysWindow.loadFile('games/simon-says.html');
   
-  // Send pet type to game window when it's ready
+  // Send pet type and app path to game window when it's ready
   simonSaysWindow.webContents.once('did-finish-load', () => {
     simonSaysWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+    // Send app path so renderer can resolve sprite paths correctly
+    simonSaysWindow.webContents.send('game:appPath', app.getAppPath());
   });
   
   simonSaysWindow.on('closed', () => {
@@ -1559,7 +1561,12 @@ function openMemoryMatchWindow() {
     memoryMatchWindow.setMenu(null);
     memoryMatchWindow.setMenuBarVisibility(false);
   }
-  memoryMatchWindow.loadFile('memory-match.html');
+  memoryMatchWindow.loadFile('games/memory-match.html');
+  
+  // Send app path so renderer can resolve sprite paths correctly
+  memoryMatchWindow.webContents.once('did-finish-load', () => {
+    memoryMatchWindow.webContents.send('game:appPath', app.getAppPath());
+  });
   
   memoryMatchWindow.on('closed', () => {
     memoryMatchWindow = null;
@@ -1590,11 +1597,12 @@ function openReactionTimeWindow() {
     reactionTimeWindow.setMenu(null);
     reactionTimeWindow.setMenuBarVisibility(false);
   }
-  reactionTimeWindow.loadFile('reaction-time.html');
+  reactionTimeWindow.loadFile('games/reaction-time.html');
   
-  // Send pet type to game window when it's ready
+  // Send pet type and app path to game window when it's ready
   reactionTimeWindow.webContents.once('did-finish-load', () => {
     reactionTimeWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+    reactionTimeWindow.webContents.send('game:appPath', app.getAppPath());
   });
   
   reactionTimeWindow.on('closed', () => {
@@ -1626,7 +1634,7 @@ function openSlotMachineWindow() {
     slotMachineWindow.setMenu(null);
     slotMachineWindow.setMenuBarVisibility(false);
   }
-  slotMachineWindow.loadFile('slot-machine.html');
+  slotMachineWindow.loadFile('games/slot-machine.html');
   slotMachineWindow.on('closed', () => {
     slotMachineWindow = null;
   });
@@ -1656,11 +1664,12 @@ function openSolverWindow() {
     solverWindow.setMenu(null);
     solverWindow.setMenuBarVisibility(false);
   }
-  solverWindow.loadFile('solver.html');
+  solverWindow.loadFile('games/solver.html');
   
-  // Send pet type to game window when it's ready
+  // Send pet type and app path to game window when it's ready
   solverWindow.webContents.once('did-finish-load', () => {
     solverWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+    solverWindow.webContents.send('game:appPath', app.getAppPath());
   });
   
   solverWindow.on('closed', () => {
@@ -1692,7 +1701,12 @@ function openShooterWindow() {
     shooterWindow.setMenu(null);
     shooterWindow.setMenuBarVisibility(false);
   }
-  shooterWindow.loadFile('shooter.html');
+  shooterWindow.loadFile('games/shooter.html');
+  
+  // Send app path so renderer can resolve sprite paths correctly
+  shooterWindow.webContents.once('did-finish-load', () => {
+    shooterWindow.webContents.send('game:appPath', app.getAppPath());
+  });
   
   shooterWindow.on('closed', () => {
     shooterWindow = null;
@@ -1723,11 +1737,12 @@ function openSnakeWindow() {
     snakeWindow.setMenu(null);
     snakeWindow.setMenuBarVisibility(false);
   }
-  snakeWindow.loadFile('snake.html');
+  snakeWindow.loadFile('games/snake.html');
   
-  // Send pet type to game window when it's ready
+  // Send pet type and app path to game window when it's ready
   snakeWindow.webContents.once('did-finish-load', () => {
     snakeWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+    snakeWindow.webContents.send('game:appPath', app.getAppPath());
   });
   
   snakeWindow.on('closed', () => {
