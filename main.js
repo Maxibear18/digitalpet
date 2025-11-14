@@ -1549,7 +1549,17 @@ ipcMain.on('shop:sellPet', (_event, payload) => {
 ipcMain.on('game:reward', (_event, rewards) => {
   // rewards should be an object with: { money, happiness, experience, hunger, rest }
   if (rewards.money) {
-    money += rewards.money;
+    let moneyReward = rewards.money;
+    
+    // Check if calculator is active and apply 30% boost
+    const calculatorActive = activeToys.some(toy => toy.toyId === 'calculator');
+    if (calculatorActive) {
+      moneyReward = Math.floor(moneyReward * 1.3); // 30% boost
+      console.log(`Calculator boost applied! Original: $${rewards.money}, Boosted: $${moneyReward}`);
+    }
+    
+    money += moneyReward;
+    queueSave(); // Save after money change
     sendMoneyUpdate();
   }
   if (rewards.happiness && storedStats.happiness) {
