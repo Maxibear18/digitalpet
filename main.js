@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain } = require('electron');
 const path = require('path');
+const { loadSave, saveGame, deleteSave } = require('./saveManager');
 
 let petWindow;
 let shopWindow;
@@ -22,6 +23,9 @@ let purchasedGames = {
   shooter: false, // Track if shooter has been purchased
   snake: false // Track if snake has been purchased
 };
+
+// Active toys tracking (for save/load)
+let activeToys = []; // Array of { toyId, activationTime, duration }
 
 // Store stats even when stats window is closed
 let storedStats = {
@@ -122,6 +126,234 @@ const LOW_STATS_HEALTH_DECAY_DOUBLE = 10; // Health decrease when 2 stats are at
 const LOW_STATS_HEALTH_DECAY_TRIPLE = 15; // Health decrease when all 3 stats are at 0
 let lowStatsHealthDecayIntervalId = null;
 
+// Save system - helper functions
+let saveDebounceTimer = null;
+const SAVE_DEBOUNCE_DELAY = 1000; // Save 1 second after last change
+
+/**
+ * Load game state from save file
+ */
+function loadGameState() {
+  const saveData = loadSave();
+  
+  // Apply loaded data to state variables
+  petName = saveData.petName || petName;
+  currentPetType = saveData.currentPetType || currentPetType;
+  currentEvolutionStage = saveData.currentEvolutionStage || currentEvolutionStage;
+  isEggHatched = saveData.isEggHatched || isEggHatched;
+  hasEgg = saveData.hasEgg || hasEgg;
+  storedStats = saveData.storedStats || storedStats;
+  isPetSleeping = saveData.isPetSleeping || isPetSleeping;
+  isPetExercising = saveData.isPetExercising || isPetExercising;
+  isPetSick = saveData.isPetSick || isPetSick;
+  isPetDead = saveData.isPetDead || isPetDead;
+  wasteCount = saveData.wasteCount || wasteCount;
+  money = saveData.money || money;
+  purchasedGames = saveData.purchasedGames || purchasedGames;
+  activeToys = saveData.activeToys || [];
+  
+  // Calculate elapsed time since last save
+  if (saveData.lastSaveTime) {
+    const lastSave = new Date(saveData.lastSaveTime);
+    const now = new Date();
+    const elapsedMs = now - lastSave;
+    const elapsedMinutes = elapsedMs / 60000;
+    
+    console.log(`Elapsed time since last save: ${elapsedMinutes.toFixed(2)} minutes`);
+    
+    // Apply elapsed time to stats (only if egg is hatched)
+    if (isEggHatched && elapsedMinutes > 0) {
+      applyElapsedTime(elapsedMinutes);
+    }
+    
+    // Update toy timers based on elapsed time
+    updateToyTimers(elapsedMs);
+  }
+  
+  console.log('Game state loaded from save file');
+}
+
+/**
+ * Update toy timers based on elapsed time
+ */
+function updateToyTimers(elapsedMs) {
+  const now = Date.now();
+  activeToys = activeToys.filter(toy => {
+    const elapsed = elapsedMs;
+    const remainingTime = toy.remainingTime - elapsed;
+    
+    if (remainingTime <= 0) {
+      // Toy expired while game was closed
+      console.log(`Toy ${toy.toyId} expired while game was closed`);
+      return false;
+    }
+    
+    // Update remaining time
+    toy.remainingTime = remainingTime;
+    toy.activationTime = now - (toy.duration - remainingTime);
+    return true;
+  });
+}
+
+/**
+ * Apply elapsed time to stats (decay/increment based on time passed)
+ */
+function applyElapsedTime(elapsedMinutes) {
+  if (!storedStats) return;
+  
+  // Hunger decay: every 2 minutes, decrease by 10
+  if (storedStats.hunger) {
+    const hungerDecays = Math.floor(elapsedMinutes / 2);
+    if (hungerDecays > 0) {
+      const hungerDecrease = hungerDecays * 10;
+      storedStats.hunger.value = Math.max(0, storedStats.hunger.value - hungerDecrease);
+    }
+  }
+  
+  // Happiness decay: every 1 minute, decrease by 10
+  if (storedStats.happiness) {
+    const happinessDecays = Math.floor(elapsedMinutes / 1);
+    if (happinessDecays > 0) {
+      const happinessDecrease = happinessDecays * 10;
+      storedStats.happiness.value = Math.max(0, storedStats.happiness.value - happinessDecrease);
+    }
+  }
+  
+  // Rest decay/increment: depends on sleep state
+  if (storedStats.rest) {
+    if (isPetSleeping) {
+      // Rest increment: every 0.75 minutes (45 seconds), increase by 5
+      const restIncrements = Math.floor(elapsedMinutes / 0.75);
+      if (restIncrements > 0) {
+        const restIncrease = restIncrements * 5;
+        storedStats.rest.value = Math.min(100, storedStats.rest.value + restIncrease);
+      }
+      
+      // Health increment: every 4 minutes, increase by 5
+      if (storedStats.health) {
+        const healthIncrements = Math.floor(elapsedMinutes / 4);
+        if (healthIncrements > 0) {
+          const healthIncrease = healthIncrements * 5;
+          storedStats.health.value = Math.min(100, storedStats.health.value + healthIncrease);
+        }
+      }
+    } else {
+      // Rest decay: every 1.5 minutes, decrease by 5
+      const restDecays = Math.floor(elapsedMinutes / 1.5);
+      if (restDecays > 0) {
+        const restDecrease = restDecays * 5;
+        storedStats.rest.value = Math.max(0, storedStats.rest.value - restDecrease);
+      }
+    }
+  }
+  
+  // Health decay from sickness: every 1.5 minutes, decrease by 10
+  if (isPetSick && storedStats.health) {
+    const healthDecays = Math.floor(elapsedMinutes / 1.5);
+    if (healthDecays > 0) {
+      const healthDecrease = healthDecays * 10;
+      storedStats.health.value = Math.max(0, storedStats.health.value - healthDecrease);
+      
+      // Check if pet died
+      if (storedStats.health.value === 0 && !isPetDead) {
+        isPetDead = true;
+      }
+    }
+  }
+  
+  // Health decay from low stats: every 1 minute
+  if (storedStats.health && storedStats.hunger && storedStats.rest && storedStats.happiness) {
+    const lowStatsChecks = Math.floor(elapsedMinutes / 1);
+    if (lowStatsChecks > 0) {
+      for (let i = 0; i < lowStatsChecks; i++) {
+        const currentHunger = storedStats.hunger.value;
+        const currentRest = storedStats.rest.value;
+        const currentHappiness = storedStats.happiness.value;
+        
+        let statsAtZero = 0;
+        if (currentHunger === 0) statsAtZero++;
+        if (currentRest === 0) statsAtZero++;
+        if (currentHappiness === 0) statsAtZero++;
+        
+        if (statsAtZero > 0) {
+          let healthDecrease = 0;
+          if (statsAtZero === 1) healthDecrease = 5;
+          else if (statsAtZero === 2) healthDecrease = 10;
+          else if (statsAtZero === 3) healthDecrease = 15;
+          
+          storedStats.health.value = Math.max(0, storedStats.health.value - healthDecrease);
+          
+          if (storedStats.health.value === 0 && !isPetDead) {
+            isPetDead = true;
+          }
+        }
+      }
+    }
+  }
+  
+  // Money increment: every 1 minute, increase by 50
+  const moneyIncrements = Math.floor(elapsedMinutes / 1);
+  if (moneyIncrements > 0) {
+    money += moneyIncrements * 50;
+  }
+  
+  console.log('Applied elapsed time to stats');
+}
+
+/**
+ * Save current game state to file
+ * Uses debouncing to avoid excessive saves
+ */
+function saveGameState() {
+  // Clear any pending save
+  if (saveDebounceTimer) {
+    clearTimeout(saveDebounceTimer);
+  }
+  
+  // Update toy remaining times before saving
+  updateToyRemainingTimes();
+  
+  // Save immediately (for app close)
+  const gameState = {
+    petName,
+    currentPetType,
+    currentEvolutionStage,
+    isEggHatched,
+    hasEgg,
+    storedStats,
+    isPetSleeping,
+    isPetExercising,
+    isPetSick,
+    isPetDead,
+    wasteCount,
+    money,
+    purchasedGames,
+    activeToys,
+    timerStates: {
+      // Save current time for elapsed time calculation
+      lastSaveTime: new Date().toISOString()
+    }
+  };
+  
+  saveGame(gameState);
+}
+
+/**
+ * Queue a save (debounced)
+ * Call this after state changes
+ */
+function queueSave() {
+  // Clear any pending save
+  if (saveDebounceTimer) {
+    clearTimeout(saveDebounceTimer);
+  }
+  
+  // Schedule save after delay
+  saveDebounceTimer = setTimeout(() => {
+    saveGameState();
+  }, SAVE_DEBOUNCE_DELAY);
+}
+
 function createPetWindow() {
   // Create the browser window
   petWindow = new BrowserWindow({
@@ -134,7 +366,7 @@ function createPetWindow() {
     resizable: true, // Allow resizing
     minWidth: 200,
     minHeight: 200,
-    title: petName,
+    title: petName || 'Digital Pet',
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -153,22 +385,68 @@ function createPetWindow() {
 
   // Send stored stats to pet window once it's ready
   petWindow.webContents.once('did-finish-load', () => {
-    // Send all stored stats to the pet window
-    Object.keys(storedStats).forEach(key => {
-      const stat = storedStats[key];
-      petWindow.webContents.send('stats:load', {
-        key: key,
-        value: stat.value,
-        max: stat.max
-      });
-    });
-    // Send evolution stage to pet window
-    petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
-    // Send pet type to pet window
-    petWindow.webContents.send('pet:typeUpdate', currentPetType);
-    // Send egg hatched state to pet window
+    // Send egg hatched state FIRST (controls pet visibility)
     petWindow.webContents.send('egg:hatchedState', isEggHatched);
+    
+    // Small delay to ensure egg state is processed before sending other data
+    setTimeout(() => {
+      // Send all stored stats to the pet window
+      Object.keys(storedStats).forEach(key => {
+        const stat = storedStats[key];
+        petWindow.webContents.send('stats:load', {
+          key: key,
+          value: stat.value,
+          max: stat.max
+        });
+      });
+      
+      // Send pet type and evolution stage (must be sent after egg state)
+      petWindow.webContents.send('pet:typeUpdate', currentPetType);
+      petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+      
+      // Send pet state flags
+      if (isPetSleeping) {
+        petWindow.webContents.send('pet:sleeping', true);
+      }
+      if (isPetExercising) {
+        petWindow.webContents.send('pet:exercising', true);
+      }
+      if (isPetSick) {
+        petWindow.webContents.send('pet:sick', true);
+      }
+      if (isPetDead) {
+        petWindow.webContents.send('pet:death', true);
+      }
+      
+      // Force pet to show if hatched
+      if (isEggHatched) {
+        petWindow.webContents.send('pet:forceShow');
+      }
+      
+      // Restore active toys
+      if (activeToys && activeToys.length > 0) {
+        setTimeout(() => {
+          const toyPaths = {
+            pudding: 'sprites/toys/Pudding.png',
+            bubblewand: 'sprites/toys/Bubble Wand.png',
+            chimes: 'sprites/toys/Chimes.png',
+            calculator: 'sprites/toys/Calculator.png',
+            musicplayer: 'sprites/toys/Music Player.png',
+            paddle: 'sprites/toys/Paddle.png'
+          };
+          
+          activeToys.forEach(toy => {
+            petWindow.webContents.send('toy:restore', {
+              toyId: toy.toyId,
+              remainingTime: toy.remainingTime,
+              imagePath: toyPaths[toy.toyId] || ''
+            });
+          });
+        }, 200);
+      }
+    }, 100);
   });
+  
 
   // Build custom menu with Actions, Shop, and Stats
   buildMenu();
@@ -182,7 +460,24 @@ function createPetWindow() {
   startSicknessCheck(); // Start sickness check system
   startMoneyIncrement(); // Start money increment system
   startLowStatsHealthDecay(); // Start health decay from low stats
-  // Rest increment is started/stopped when pet sleeps/wakes
+  
+  // Resume timers based on saved state
+  if (isPetSleeping) {
+    // Pet was sleeping - start rest increment and health increment
+    stopRestDecay();
+    startRestIncrement();
+    startHealthIncrement();
+  }
+  
+  if (isPetSick) {
+    // Pet was sick - ensure health decay is running
+    startHealthDecay();
+  }
+  
+  if (isPetExercising) {
+    // Pet was exercising - start exercise interval
+    startExerciseInterval();
+  }
   
   // Send initial money to pet window
   if (petWindow && !petWindow.isDestroyed()) {
@@ -451,8 +746,15 @@ function openStatsWindow() {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(() => {
+  // Load save data on startup
+  loadGameState();
   createPetWindow();
   // Hunger decay is started in createPetWindow(), but ensure it runs even if window creation has issues
+});
+
+// Save game before quitting
+app.on('before-quit', () => {
+  saveGameState();
 });
 
 // Quit when all windows are closed
@@ -500,10 +802,12 @@ ipcMain.on('shop:buy', (_event, payload) => {
   
   // Deduct money
   money -= cost;
+  queueSave(); // Save after money change
   
   // Track egg purchase
   if (itemId === 'egg1' || itemId === 'eggInter') {
     hasEgg = true;
+    queueSave(); // Save after egg purchase
     // Notify shop window that egg was purchased
     if (shopWindow && !shopWindow.isDestroyed()) {
       shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: isEggHatched, hasEgg: hasEgg });
@@ -513,6 +817,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   // Track game purchase
   if (itemId === 'slotMachine') {
     purchasedGames.slotMachine = true;
+    queueSave(); // Save after game purchase
     // Rebuild menu to include the new game
     buildMenu();
     // Notify shop window that game was purchased
@@ -527,6 +832,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   
   if (itemId === 'solver') {
     purchasedGames.solver = true;
+    queueSave(); // Save after game purchase
     // Rebuild menu to include the new game
     buildMenu();
     // Notify shop window that game was purchased
@@ -541,6 +847,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   
   if (itemId === 'shooter') {
     purchasedGames.shooter = true;
+    queueSave(); // Save after game purchase
     // Rebuild menu to include the new game
     buildMenu();
     // Notify shop window that game was purchased
@@ -555,6 +862,7 @@ ipcMain.on('shop:buy', (_event, payload) => {
   
   if (itemId === 'snake') {
     purchasedGames.snake = true;
+    queueSave(); // Save after game purchase
     // Rebuild menu to include the new game
     buildMenu();
     // Notify shop window that game was purchased
@@ -618,6 +926,7 @@ ipcMain.on('item:refund', (_event, refundAmount) => {
 // Handle egg hatching
 ipcMain.on('egg:hatched', () => {
   isEggHatched = true;
+  queueSave(); // Save after egg hatches
   console.log('Egg has hatched! Stats decay will now start.');
   // Open name dialog window
   openNameDialog();
@@ -643,6 +952,8 @@ ipcMain.on('pet:nameSubmitted', (_event, name) => {
   if (nameDialogWindow && !nameDialogWindow.isDestroyed()) {
     nameDialogWindow.close();
   }
+  
+  queueSave(); // Save after name change
 });
 
 // Open name dialog window
@@ -723,6 +1034,8 @@ ipcMain.on('stats:update', (_event, payload) => {
     storedStats[key] = { value: value, max: max };
   }
   
+  queueSave(); // Save after stats change
+  
   // Forward to stats window if it's open (but NOT experience, which is hidden)
   if (statsWindow && !statsWindow.isDestroyed() && key !== 'experience') {
     statsWindow.webContents.send('stats:update', payload);
@@ -732,6 +1045,7 @@ ipcMain.on('stats:update', (_event, payload) => {
 // Handle pet sleep state changes to update menu
 ipcMain.on('pet:sleeping', (_event, sleeping) => {
   isPetSleeping = sleeping;
+  queueSave(); // Save after sleep state change
   buildMenu(); // Rebuild menu with updated Sleep/Wake Up button
   
   if (sleeping) {
@@ -756,6 +1070,7 @@ ipcMain.on('pet:sleeping', (_event, sleeping) => {
 // Handle pet exercise state changes to update menu
 ipcMain.on('pet:exercising', (_event, exercising) => {
   isPetExercising = exercising;
+  queueSave(); // Save after exercise state change
   buildMenu(); // Rebuild menu with updated Exercise/Stop Exercise button
   
   if (exercising) {
@@ -770,6 +1085,7 @@ ipcMain.on('pet:exercising', (_event, exercising) => {
 // Handle pet sickness state changes
 ipcMain.on('pet:sick', (_event, sick) => {
   isPetSick = sick;
+  queueSave(); // Save after sickness state change
   
   if (sick) {
     // Pet is sick - start health decay
@@ -791,6 +1107,7 @@ ipcMain.on('pet:sick', (_event, sick) => {
 // Handle pet death state changes
 ipcMain.on('pet:death', (_event, dead) => {
   isPetDead = dead;
+  queueSave(); // Save after death state change
   
   // Stop exercise if pet dies
   if (dead && isPetExercising) {
@@ -803,6 +1120,7 @@ ipcMain.on('pet:death', (_event, dead) => {
 // Handle pet evolution
 ipcMain.on('pet:evolved', (_event, stage) => {
   currentEvolutionStage = stage;
+  queueSave(); // Save after evolution
   console.log(`Pet evolved to stage ${stage}!`);
   // Notify shop window to refresh sell preview and price
   if (shopWindow && !shopWindow.isDestroyed()) {
@@ -814,6 +1132,7 @@ ipcMain.on('pet:evolved', (_event, stage) => {
 // Handle pet type update (when egg hatches)
 ipcMain.on('pet:typeUpdate', (_event, petType) => {
   currentPetType = petType;
+  queueSave(); // Save after pet type change
   console.log(`Pet type set to: ${petType}`);
 });
 
@@ -827,6 +1146,52 @@ ipcMain.on('pet:requestEvolutionStage', (event) => {
 // Handle waste count updates from renderer
 ipcMain.on('waste:updateCount', (_event, count) => {
   wasteCount = count;
+  queueSave(); // Save after waste count change
+});
+
+// Handle toy activation from renderer
+ipcMain.on('toy:activated', (_event, toyData) => {
+  const { toyId, duration } = toyData;
+  const now = Date.now();
+  
+  // Remove any existing instance of this toy (shouldn't happen, but just in case)
+  activeToys = activeToys.filter(toy => toy.toyId !== toyId);
+  
+  // Add new active toy
+  activeToys.push({
+    toyId: toyId,
+    activationTime: now,
+    duration: duration,
+    remainingTime: duration // Start with full duration
+  });
+  
+  queueSave(); // Save after toy activation
+  console.log(`Toy ${toyId} activated, duration: ${duration}ms`);
+});
+
+// Update toy remaining time periodically (called before save)
+function updateToyRemainingTimes() {
+  const now = Date.now();
+  activeToys = activeToys.filter(toy => {
+    const elapsed = now - toy.activationTime;
+    const remaining = toy.duration - elapsed;
+    
+    if (remaining <= 0) {
+      // Toy expired
+      return false;
+    }
+    
+    // Update remaining time
+    toy.remainingTime = remaining;
+    return true;
+  });
+}
+
+// Handle toy deactivation from renderer
+ipcMain.on('toy:deactivated', (_event, toyId) => {
+  activeToys = activeToys.filter(toy => toy.toyId !== toyId);
+  queueSave(); // Save after toy deactivation
+  console.log(`Toy ${toyId} deactivated`);
 });
 
 // Handle money request from any window
@@ -881,6 +1246,7 @@ ipcMain.on('games:requestPurchased', (event) => {
 // Handle money update from slot machine
 ipcMain.on('money:update', (_event, amount) => {
   money = amount;
+  queueSave(); // Save after money change
   sendMoneyUpdate();
 });
 
@@ -1710,6 +2076,7 @@ function startMoneyIncrement() {
   // Set up interval to increase money every minute
   moneyIncrementIntervalId = setInterval(() => {
     money += MONEY_INCREMENT_AMOUNT;
+    queueSave(); // Save after money increment
     sendMoneyUpdate();
     console.log(`Money increased by $${MONEY_INCREMENT_AMOUNT}. Total: $${money}`);
   }, MONEY_INCREMENT_INTERVAL);

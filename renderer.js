@@ -793,10 +793,28 @@ window.addEventListener('load', () => {
                     const happinessSprites = getHappinessSprites();
                     pet.src = happinessSprites[happinessSpriteIndex];
                 } else {
-                    pet.src = sprites[currentSpriteIndex];
+                    pet.src = sprites[currentSpriteIndex] || sprites[0];
                 }
                 reloadPetImageData();
                 updatePetSize();
+                
+                // Show pet if egg is hatched
+                if (isEggHatched) {
+                    showPet();
+                }
+            } else {
+                // Pet element not ready yet, wait a bit and try again
+                setTimeout(() => {
+                    if (pet && isEggHatched) {
+                        const sprites = getWalkSprites();
+                        if (sprites && sprites.length > 0) {
+                            pet.src = sprites[0];
+                            reloadPetImageData();
+                            updatePetSize();
+                            showPet();
+                        }
+                    }
+                }, 200);
             }
         }
     });
@@ -812,7 +830,47 @@ window.addEventListener('load', () => {
         if (!isEggHatched && !hasEgg) {
             // No egg and not hatched - hide pet initially
             hidePet();
+        } else if (isEggHatched && pet) {
+            // Egg is hatched - show pet
+            showPet();
+            // Ensure pet sprite is loaded
+            const sprites = getWalkSprites();
+            if (sprites && sprites.length > 0 && pet.src !== sprites[0]) {
+                pet.src = sprites[0];
+                reloadPetImageData();
+                updatePetSize();
+            }
         }
+    });
+    
+    // Listen for force show pet (when loading from save)
+    ipcRenderer.on('pet:forceShow', () => {
+        if (isEggHatched && pet) {
+            console.log('Forcing pet to show');
+            showPet();
+            // Ensure pet sprite is loaded
+            const sprites = getWalkSprites();
+            const sleepSprite = getSleepSprite();
+            if (sprites && sprites.length > 0) {
+                if (isSleeping || isDead) {
+                    pet.src = sleepSprite;
+                } else {
+                    pet.src = sprites[0];
+                }
+                reloadPetImageData();
+                updatePetSize();
+            }
+        }
+    });
+    
+    // Listen for toy restore (when loading from save)
+    ipcRenderer.on('toy:restore', (_event, toyData) => {
+        const { toyId, remainingTime, imagePath } = toyData;
+        console.log(`Restoring toy ${toyId} with ${remainingTime}ms remaining, imagePath: ${imagePath}`);
+        // Wait a bit to ensure DOM is ready
+        setTimeout(() => {
+            spawnToy(imagePath, toyId, 0, remainingTime);
+        }, 300);
     });
     
     // Request initial money from main process
@@ -1355,9 +1413,17 @@ function finishEatingMedkit() {
 }
 
 // Spawn toy and display it in the bottom right
-function spawnToy(imagePath, toyId, toyCost) {
+function spawnToy(imagePath, toyId, toyCost, remainingTime = null) {
     const container = document.querySelector('.pet-container');
-    if (!container) return;
+    if (!container) {
+        console.error('Pet container not found when trying to spawn toy');
+        return;
+    }
+
+    if (!imagePath) {
+        console.error(`No image path provided for toy ${toyId}`);
+        return;
+    }
 
     const item = document.createElement('img');
     item.src = imagePath;
@@ -1374,6 +1440,19 @@ function spawnToy(imagePath, toyId, toyCost) {
     item.style.height = 'auto';
     item.style.bottom = '8px'; // Position at bottom
     item.style.right = '8px'; // Start at right edge
+    
+    // Handle image load errors
+    item.onerror = function() {
+        console.error(`Failed to load toy image: ${imagePath}`);
+        // Try to remove the broken image
+        if (item.parentNode) {
+            item.parentNode.removeChild(item);
+        }
+    };
+    
+    item.onload = function() {
+        console.log(`Toy image loaded successfully: ${imagePath}`);
+    };
 
     container.appendChild(item);
     
@@ -1385,23 +1464,24 @@ function spawnToy(imagePath, toyId, toyCost) {
     updateToyPositions();
     
     // Special handling for each toy: activate effect and set timer
+    // remainingTime is passed if restoring from save
     if (toyId === 'pudding') {
-        activatePuddingEffect(item);
+        activatePuddingEffect(item, remainingTime);
     } else if (toyId === 'bubblewand') {
-        activateBubbleWandEffect(item);
+        activateBubbleWandEffect(item, remainingTime);
     } else if (toyId === 'chimes') {
-        activateChimesEffect(item);
+        activateChimesEffect(item, remainingTime);
     } else if (toyId === 'calculator') {
-        activateCalculatorEffect(item);
+        activateCalculatorEffect(item, remainingTime);
     } else if (toyId === 'musicplayer') {
-        activateMusicPlayerEffect(item);
+        activateMusicPlayerEffect(item, remainingTime);
     } else if (toyId === 'paddle') {
-        activatePaddleEffect(item);
+        activatePaddleEffect(item, remainingTime);
     }
 }
 
 // Activate pudding effect and set timer
-function activatePuddingEffect(puddingItem) {
+function activatePuddingEffect(puddingItem, remainingTime = null) {
     // Activate pudding effect
     isPuddingActive = true;
     
@@ -1410,11 +1490,18 @@ function activatePuddingEffect(puddingItem) {
         clearTimeout(puddingTimerId);
     }
     
-    // Set timer for 25 minutes (1500000 ms)
+    // Set timer for 25 minutes (1500000 ms) or use remaining time if restoring
     const PUDDING_DURATION = 1500000; // 25 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : PUDDING_DURATION;
+    
     puddingTimerId = setTimeout(() => {
         deactivatePuddingEffect(puddingItem);
-    }, PUDDING_DURATION);
+    }, timerDuration);
+    
+    // Notify main process
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'pudding', duration: PUDDING_DURATION });
+    }
     
     console.log('Pudding effect activated! Hunger increases will be boosted by 30% for 25 minutes.');
 }
@@ -1424,6 +1511,9 @@ function deactivatePuddingEffect(puddingItem) {
     // Deactivate pudding effect
     isPuddingActive = false;
     puddingTimerId = null;
+    
+    // Notify main process
+    ipcRenderer.send('toy:deactivated', 'pudding');
     
     // Remove pudding from toy items array
     toyItems = toyItems.filter(toy => toy !== puddingItem);
@@ -1440,7 +1530,7 @@ function deactivatePuddingEffect(puddingItem) {
 }
 
 // Activate bubble wand effect and set timer
-function activateBubbleWandEffect(bubbleWandItem) {
+function activateBubbleWandEffect(bubbleWandItem, remainingTime = null) {
     isBubbleWandActive = true;
     
     if (bubbleWandTimerId) {
@@ -1448,9 +1538,14 @@ function activateBubbleWandEffect(bubbleWandItem) {
     }
     
     const BUBBLE_WAND_DURATION = 1500000; // 25 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : BUBBLE_WAND_DURATION;
     bubbleWandTimerId = setTimeout(() => {
         deactivateBubbleWandEffect(bubbleWandItem);
-    }, BUBBLE_WAND_DURATION);
+    }, timerDuration);
+    
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'bubblewand', duration: BUBBLE_WAND_DURATION });
+    }
     
     console.log('Bubble Wand effect activated! Happiness increases will be boosted by 30% for 25 minutes.');
 }
@@ -1459,6 +1554,8 @@ function activateBubbleWandEffect(bubbleWandItem) {
 function deactivateBubbleWandEffect(bubbleWandItem) {
     isBubbleWandActive = false;
     bubbleWandTimerId = null;
+    
+    ipcRenderer.send('toy:deactivated', 'bubblewand');
     
     toyItems = toyItems.filter(toy => toy !== bubbleWandItem);
     
@@ -1471,7 +1568,7 @@ function deactivateBubbleWandEffect(bubbleWandItem) {
 }
 
 // Activate chimes effect and set timer
-function activateChimesEffect(chimesItem) {
+function activateChimesEffect(chimesItem, remainingTime = null) {
     isChimesActive = true;
     
     if (chimesTimerId) {
@@ -1479,9 +1576,14 @@ function activateChimesEffect(chimesItem) {
     }
     
     const CHIMES_DURATION = 1500000; // 25 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : CHIMES_DURATION;
     chimesTimerId = setTimeout(() => {
         deactivateChimesEffect(chimesItem);
-    }, CHIMES_DURATION);
+    }, timerDuration);
+    
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'chimes', duration: CHIMES_DURATION });
+    }
     
     console.log('Chimes effect activated! Rest increases will be boosted by 30% for 25 minutes.');
 }
@@ -1490,6 +1592,8 @@ function activateChimesEffect(chimesItem) {
 function deactivateChimesEffect(chimesItem) {
     isChimesActive = false;
     chimesTimerId = null;
+    
+    ipcRenderer.send('toy:deactivated', 'chimes');
     
     toyItems = toyItems.filter(toy => toy !== chimesItem);
     
@@ -1502,7 +1606,7 @@ function deactivateChimesEffect(chimesItem) {
 }
 
 // Activate calculator effect and set timer
-function activateCalculatorEffect(calculatorItem) {
+function activateCalculatorEffect(calculatorItem, remainingTime = null) {
     isCalculatorActive = true;
     
     if (calculatorTimerId) {
@@ -1510,9 +1614,14 @@ function activateCalculatorEffect(calculatorItem) {
     }
     
     const CALCULATOR_DURATION = 1500000; // 25 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : CALCULATOR_DURATION;
     calculatorTimerId = setTimeout(() => {
         deactivateCalculatorEffect(calculatorItem);
-    }, CALCULATOR_DURATION);
+    }, timerDuration);
+    
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'calculator', duration: CALCULATOR_DURATION });
+    }
     
     console.log('Calculator effect activated! Money from minigames will be boosted by 30% for 25 minutes.');
 }
@@ -1521,6 +1630,8 @@ function activateCalculatorEffect(calculatorItem) {
 function deactivateCalculatorEffect(calculatorItem) {
     isCalculatorActive = false;
     calculatorTimerId = null;
+    
+    ipcRenderer.send('toy:deactivated', 'calculator');
     
     toyItems = toyItems.filter(toy => toy !== calculatorItem);
     
@@ -1533,7 +1644,7 @@ function deactivateCalculatorEffect(calculatorItem) {
 }
 
 // Activate music player effect and set timer
-function activateMusicPlayerEffect(musicPlayerItem) {
+function activateMusicPlayerEffect(musicPlayerItem, remainingTime = null) {
     isMusicPlayerActive = true;
     
     if (musicPlayerTimerId) {
@@ -1546,9 +1657,10 @@ function activateMusicPlayerEffect(musicPlayerItem) {
     }
     
     const MUSIC_PLAYER_DURATION = 900000; // 15 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : MUSIC_PLAYER_DURATION;
     musicPlayerTimerId = setTimeout(() => {
         deactivateMusicPlayerEffect(musicPlayerItem);
-    }, MUSIC_PLAYER_DURATION);
+    }, timerDuration);
     
     // Start healing interval: +2 health every 45 seconds
     const HEAL_INTERVAL = 45000; // 45 seconds
@@ -1558,6 +1670,10 @@ function activateMusicPlayerEffect(musicPlayerItem) {
             console.log('Music Player healed +2 health!');
         }
     }, HEAL_INTERVAL);
+    
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'musicplayer', duration: MUSIC_PLAYER_DURATION });
+    }
     
     console.log('Music Player effect activated! Will heal +2 health every 45 seconds for 15 minutes.');
 }
@@ -1573,6 +1689,8 @@ function deactivateMusicPlayerEffect(musicPlayerItem) {
         musicPlayerHealIntervalId = null;
     }
     
+    ipcRenderer.send('toy:deactivated', 'musicplayer');
+    
     toyItems = toyItems.filter(toy => toy !== musicPlayerItem);
     
     if (musicPlayerItem && musicPlayerItem.parentNode) {
@@ -1584,7 +1702,7 @@ function deactivateMusicPlayerEffect(musicPlayerItem) {
 }
 
 // Activate paddle effect and set timer
-function activatePaddleEffect(paddleItem) {
+function activatePaddleEffect(paddleItem, remainingTime = null) {
     isPaddleActive = true;
     
     if (paddleTimerId) {
@@ -1592,9 +1710,14 @@ function activatePaddleEffect(paddleItem) {
     }
     
     const PADDLE_DURATION = 900000; // 15 minutes
+    const timerDuration = remainingTime !== null ? remainingTime : PADDLE_DURATION;
     paddleTimerId = setTimeout(() => {
         deactivatePaddleEffect(paddleItem);
-    }, PADDLE_DURATION);
+    }, timerDuration);
+    
+    if (remainingTime === null) {
+        ipcRenderer.send('toy:activated', { toyId: 'paddle', duration: PADDLE_DURATION });
+    }
     
     console.log('Paddle effect activated! Experience gains will be boosted by 30% for 15 minutes.');
 }
@@ -1603,6 +1726,8 @@ function activatePaddleEffect(paddleItem) {
 function deactivatePaddleEffect(paddleItem) {
     isPaddleActive = false;
     paddleTimerId = null;
+    
+    ipcRenderer.send('toy:deactivated', 'paddle');
     
     toyItems = toyItems.filter(toy => toy !== paddleItem);
     
