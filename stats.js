@@ -1,8 +1,8 @@
 const { ipcRenderer } = require('electron');
 
 window.addEventListener('DOMContentLoaded', () => {
-    // Seed with 50/100 for all for now
-    const defaultValue = 50;
+    // Seed with 100/100 for all stats
+    const defaultValue = 100;
     const cards = Array.from(document.querySelectorAll('.stat-card'));
     cards.forEach(card => {
         const fill = card.querySelector('.fill');

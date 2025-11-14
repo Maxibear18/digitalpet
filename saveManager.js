@@ -35,11 +35,11 @@ function getDefaultSaveData() {
         isEggHatched: false,
         hasEgg: false,
         storedStats: {
-            health: { value: 50, max: 100 },
-            rest: { value: 50, max: 100 },
-            hunger: { value: 50, max: 100 },
-            happiness: { value: 50, max: 100 },
-            experience: { value: 0, max: 300 }
+            health: { value: 100, max: 100 },
+            rest: { value: 100, max: 100 },
+            hunger: { value: 100, max: 100 },
+            happiness: { value: 100, max: 100 },
+            experience: { value: 0, max: 250 }
         },
         isPetSleeping: false,
         isPetExercising: false,
@@ -118,11 +118,11 @@ function saveGame(gameState) {
             isEggHatched: gameState.isEggHatched || false,
             hasEgg: gameState.hasEgg || false,
             storedStats: {
-                health: gameState.storedStats?.health || { value: 50, max: 100 },
-                rest: gameState.storedStats?.rest || { value: 50, max: 100 },
-                hunger: gameState.storedStats?.hunger || { value: 50, max: 100 },
-                happiness: gameState.storedStats?.happiness || { value: 50, max: 100 },
-                experience: gameState.storedStats?.experience || { value: 0, max: 300 }
+                health: gameState.storedStats?.health || { value: 100, max: 100 },
+                rest: gameState.storedStats?.rest || { value: 100, max: 100 },
+                hunger: gameState.storedStats?.hunger || { value: 100, max: 100 },
+                happiness: gameState.storedStats?.happiness || { value: 100, max: 100 },
+                experience: gameState.storedStats?.experience || { value: 0, max: 250 }
             },
             isPetSleeping: gameState.isPetSleeping || false,
             isPetExercising: gameState.isPetExercising || false,

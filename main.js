@@ -31,11 +31,11 @@ let activeToys = []; // Array of { toyId, activationTime, duration }
 
 // Store stats even when stats window is closed
 let storedStats = {
-  health: { value: 50, max: 100 },
-  rest: { value: 50, max: 100 },
-  hunger: { value: 50, max: 100 },
-  happiness: { value: 50, max: 100 },
-  experience: { value: 0, max: 300 } // Hidden stat - not shown in stats window
+  health: { value: 100, max: 100 },
+  rest: { value: 100, max: 100 },
+  hunger: { value: 100, max: 100 },
+  happiness: { value: 100, max: 100 },
+  experience: { value: 0, max: 250 } // Hidden stat - not shown in stats window
 };
 
 // Evolution system
@@ -1229,10 +1229,10 @@ ipcMain.on('pet:fadedAway', () => {
   
   // Reset stored stats to defaults
   const defaults = {
-    hunger: { value: 50, max: 100 },
-    rest: { value: 50, max: 100 },
-    health: { value: 50, max: 100 },
-    happiness: { value: 50, max: 100 },
+    hunger: { value: 100, max: 100 },
+    rest: { value: 100, max: 100 },
+    health: { value: 100, max: 100 },
+    happiness: { value: 100, max: 100 },
     experience: { value: 0, max: 300 }
   };
   Object.keys(defaults).forEach(key => {
@@ -1750,10 +1750,10 @@ ipcMain.on('shop:sellPet', (_event, payload) => {
   currentPetType = 'botamon';
   // Reset stored stats to defaults
   const defaults = {
-    hunger: { value: 50, max: 100 },
-    rest: { value: 50, max: 100 },
-    health: { value: 50, max: 100 },
-    happiness: { value: 50, max: 100 },
+    hunger: { value: 100, max: 100 },
+    rest: { value: 100, max: 100 },
+    health: { value: 100, max: 100 },
+    happiness: { value: 100, max: 100 },
     experience: { value: 0, max: 300 }
   };
   Object.keys(defaults).forEach(key => {
@@ -1922,7 +1922,7 @@ function startHungerDecay() {
     }
     
     if (!storedStats.hunger) {
-      storedStats.hunger = { value: 50, max: HUNGER_MAX };
+      storedStats.hunger = { value: 100, max: HUNGER_MAX };
     }
     
     // Decrease hunger by the decay amount (works even when sleeping)
@@ -1972,7 +1972,7 @@ function startHappinessDecay() {
     }
     
     if (!storedStats.happiness) {
-      storedStats.happiness = { value: 50, max: HAPPINESS_MAX };
+      storedStats.happiness = { value: 100, max: HAPPINESS_MAX };
     }
     
     // Decrease happiness by the decay amount
@@ -2027,7 +2027,7 @@ function startRestDecay() {
     }
     
     if (!storedStats.rest) {
-      storedStats.rest = { value: 50, max: REST_MAX };
+      storedStats.rest = { value: 100, max: REST_MAX };
     }
     
     // Decrease rest by the decay amount
@@ -2087,7 +2087,7 @@ function startRestIncrement() {
     }
     
     if (!storedStats.rest) {
-      storedStats.rest = { value: 50, max: REST_MAX };
+      storedStats.rest = { value: 100, max: REST_MAX };
     }
     
     // Increase rest by the increment amount (cap at max)
@@ -2155,7 +2155,7 @@ function startHealthIncrement() {
     }
     
     if (!storedStats.health) {
-      storedStats.health = { value: 50, max: HEALTH_MAX };
+      storedStats.health = { value: 100, max: HEALTH_MAX };
     }
     
     // Increase health by the increment amount (cap at max)
@@ -2225,7 +2225,7 @@ function startHealthDecay() {
     }
     
     if (!storedStats.health) {
-      storedStats.health = { value: 50, max: HEALTH_MAX };
+      storedStats.health = { value: 100, max: HEALTH_MAX };
     }
     
     // Decrease health by the decay amount
@@ -2357,9 +2357,9 @@ function startLowStatsHealthDecay() {
     }
     
     // Get current stat values
-    const currentHunger = storedStats.hunger ? storedStats.hunger.value : 50;
-    const currentRest = storedStats.rest ? storedStats.rest.value : 50;
-    const currentHappiness = storedStats.happiness ? storedStats.happiness.value : 50;
+    const currentHunger = storedStats.hunger ? storedStats.hunger.value : 100;
+    const currentRest = storedStats.rest ? storedStats.rest.value : 100;
+    const currentHappiness = storedStats.happiness ? storedStats.happiness.value : 100;
     
     // Count how many stats are at 0
     let statsAtZero = 0;
@@ -2384,7 +2384,7 @@ function startLowStatsHealthDecay() {
     
     // Decrease health
     if (!storedStats.health) {
-      storedStats.health = { value: 50, max: HEALTH_MAX };
+      storedStats.health = { value: 100, max: HEALTH_MAX };
     }
     
     const currentHealth = storedStats.health.value;
@@ -2492,7 +2492,7 @@ function startExerciseInterval() {
     
     // Decrease hunger (15 per minute)
     if (!storedStats.hunger) {
-      storedStats.hunger = { value: 50, max: HUNGER_MAX };
+      storedStats.hunger = { value: 100, max: HUNGER_MAX };
     }
     const currentHunger = storedStats.hunger.value;
     const newHunger = Math.max(HUNGER_MIN, currentHunger - EXERCISE_HUNGER_DECREASE);
@@ -2518,7 +2518,7 @@ function startExerciseInterval() {
     
     // Decrease rest (15 per minute)
     if (!storedStats.rest) {
-      storedStats.rest = { value: 50, max: REST_MAX };
+      storedStats.rest = { value: 100, max: REST_MAX };
     }
     const currentRest = storedStats.rest.value;
     const newRest = Math.max(REST_MIN, currentRest - EXERCISE_REST_DECREASE);
