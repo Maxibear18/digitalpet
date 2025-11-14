@@ -147,6 +147,11 @@ function loadGameState() {
   hasEgg = saveData.hasEgg || hasEgg;
   storedStats = saveData.storedStats || storedStats;
   isPetSleeping = saveData.isPetSleeping || isPetSleeping;
+  
+  // Update pet window title with loaded name (if window exists)
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.setTitle(petName || 'Digital Pet');
+  }
   isPetExercising = saveData.isPetExercising || isPetExercising;
   isPetSick = saveData.isPetSick || isPetSick;
   isPetDead = saveData.isPetDead || isPetDead;
@@ -372,6 +377,9 @@ function createPetWindow() {
 
   // Load the HTML file
   petWindow.loadFile('windows/index.html');
+  
+  // Set window title with pet name (in case it was loaded from save)
+  petWindow.setTitle(petName || 'Digital Pet');
 
   // Set initial position (center of screen)
   const { screen } = require('electron');
@@ -381,6 +389,11 @@ function createPetWindow() {
 
   // Send stored stats to pet window once it's ready
   petWindow.webContents.once('did-finish-load', () => {
+    // Update window title with saved pet name when window loads
+    if (petWindow && !petWindow.isDestroyed()) {
+      petWindow.setTitle(petName || 'Digital Pet');
+    }
+    
     // Send egg hatched state FIRST (controls pet visibility)
     petWindow.webContents.send('egg:hatchedState', isEggHatched);
     
@@ -388,6 +401,11 @@ function createPetWindow() {
     setTimeout(() => {
       // Check if window is still valid before sending messages
       if (!petWindow || petWindow.isDestroyed()) return;
+      
+      // Ensure window title is set again after delay (in case it wasn't set initially)
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.setTitle(petName || 'Digital Pet');
+      }
       
       // Send all stored stats to the pet window
       Object.keys(storedStats).forEach(key => {
@@ -851,7 +869,13 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
+    // Reload save data in case it changed while app was closed
+    loadGameState();
     createPetWindow();
+  } else if (petWindow && !petWindow.isDestroyed()) {
+    // If window exists, reload save data and update title
+    loadGameState();
+    petWindow.setTitle(petName || 'Digital Pet');
   }
 });
 
@@ -1047,7 +1071,8 @@ ipcMain.on('pet:nameSubmitted', (_event, name) => {
     nameDialogWindow.close();
   }
   
-  queueSave(); // Save after name change
+  // Save immediately when name is submitted (don't debounce)
+  saveGameState();
 });
 
 // Open name dialog window
@@ -1056,6 +1081,13 @@ function openNameDialog() {
   if (nameDialogWindow && !nameDialogWindow.isDestroyed()) {
     nameDialogWindow.focus();
     return;
+  }
+  
+  // Always open dialog when egg hatches (allows renaming)
+  // Reset pet name to default when opening dialog so user can name the new pet
+  petName = 'Digital Pet';
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.setTitle('Digital Pet');
   }
 
   nameDialogWindow = new BrowserWindow({
@@ -1233,6 +1265,11 @@ ipcMain.on('pet:fadedAway', () => {
   currentEvolutionStage = 1;
   currentPetType = 'botamon';
   petName = 'Digital Pet';
+  
+  // Update window title immediately when pet is sold
+  if (petWindow && !petWindow.isDestroyed()) {
+    petWindow.setTitle('Digital Pet');
+  }
   
   // Reset stored stats to defaults
   const defaults = {
