@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-let purchasedGames = { slotMachine: false };
+let purchasedGames = { slotMachine: false, solver: false };
 
 window.addEventListener('DOMContentLoaded', () => {
     const playButtons = Array.from(document.querySelectorAll('.play-btn'));
@@ -24,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Listen for purchased games updates
 ipcRenderer.on('games:purchased', (_event, games) => {
-    purchasedGames = games || { slotMachine: false };
+    purchasedGames = games || { slotMachine: false, solver: false };
     updateGameVisibility();
 });
 
@@ -32,6 +32,9 @@ ipcRenderer.on('games:purchased', (_event, games) => {
 ipcRenderer.on('game:unlocked', (_event, gameId) => {
     if (gameId === 'slotMachine') {
         purchasedGames.slotMachine = true;
+        updateGameVisibility();
+    } else if (gameId === 'solver') {
+        purchasedGames.solver = true;
         updateGameVisibility();
     }
 });
@@ -44,6 +47,16 @@ function updateGameVisibility() {
             slotMachineCard.style.display = ''; // Show if purchased
         } else {
             slotMachineCard.style.display = 'none'; // Hide if not purchased
+        }
+    }
+    
+    // Show/hide solver game based on purchase status
+    const solverCard = document.querySelector('[data-game="solver"]')?.closest('.game-card');
+    if (solverCard) {
+        if (purchasedGames.solver) {
+            solverCard.style.display = ''; // Show if purchased
+        } else {
+            solverCard.style.display = 'none'; // Hide if not purchased
         }
     }
 }

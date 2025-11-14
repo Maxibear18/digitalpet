@@ -17,7 +17,8 @@ let hasEgg = false; // Track if player has purchased an egg (prevents buying mor
 
 // Purchased games tracking
 let purchasedGames = {
-  slotMachine: false // Track if slot machine has been purchased
+  slotMachine: false, // Track if slot machine has been purchased
+  solver: false // Track if solver has been purchased
 };
 
 // Store stats even when stats window is closed
@@ -53,6 +54,7 @@ const ITEM_COSTS = {
   egg1: 30,
   eggInter: 50,
   slotMachine: 500,
+  solver: 300,
   bubblewand: 200,
   calculator: 325,
   chimes: 250,
@@ -274,6 +276,18 @@ function buildMenu() {
           });
         }
         
+        // Add Solver if purchased
+        if (purchasedGames.solver) {
+          gamesSubmenu.push({
+            label: 'Solver',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openSolverWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
+          });
+        }
+        
         return gamesSubmenu;
       })()
     },
@@ -480,6 +494,20 @@ ipcMain.on('shop:buy', (_event, payload) => {
     // Notify games window if it's open
     if (gamesWindow && !gamesWindow.isDestroyed()) {
       gamesWindow.webContents.send('game:unlocked', 'slotMachine');
+    }
+  }
+  
+  if (itemId === 'solver') {
+    purchasedGames.solver = true;
+    // Rebuild menu to include the new game
+    buildMenu();
+    // Notify shop window that game was purchased
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('game:purchased', 'solver');
+    }
+    // Notify games window if it's open
+    if (gamesWindow && !gamesWindow.isDestroyed()) {
+      gamesWindow.webContents.send('game:unlocked', 'solver');
     }
   }
   
@@ -755,6 +783,7 @@ let simonSaysWindow = null;
 let memoryMatchWindow = null;
 let reactionTimeWindow = null;
 let slotMachineWindow = null;
+let solverWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
@@ -764,6 +793,8 @@ ipcMain.on('game:open', (_event, gameName) => {
     openReactionTimeWindow();
   } else if (gameName === 'slot-machine') {
     openSlotMachineWindow();
+  } else if (gameName === 'solver') {
+    openSolverWindow();
   }
 });
 
@@ -921,6 +952,42 @@ function openSlotMachineWindow() {
   slotMachineWindow.loadFile('slot-machine.html');
   slotMachineWindow.on('closed', () => {
     slotMachineWindow = null;
+  });
+}
+
+// Open Solver game window
+function openSolverWindow() {
+  if (solverWindow && !solverWindow.isDestroyed()) {
+    solverWindow.focus();
+    return;
+  }
+  solverWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    resizable: true,
+    title: 'Solver',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (solverWindow && !solverWindow.isDestroyed()) {
+    solverWindow.setMenu(null);
+    solverWindow.setMenuBarVisibility(false);
+  }
+  solverWindow.loadFile('solver.html');
+  
+  // Send pet type to game window when it's ready
+  solverWindow.webContents.once('did-finish-load', () => {
+    solverWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+  });
+  
+  solverWindow.on('closed', () => {
+    solverWindow = null;
   });
 }
 

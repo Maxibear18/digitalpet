@@ -5,7 +5,7 @@ let hasPet = false; // Track if pet exists (egg hatched)
 let hasEgg = false; // Track if player has purchased an egg
 let shopPetType = 'botamon';
 let shopEvolutionStage = 1;
-let purchasedGames = { slotMachine: false }; // Track purchased games
+let purchasedGames = { slotMachine: false, solver: false }; // Track purchased games
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -174,7 +174,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Listen for purchased games updates
     ipcRenderer.on('games:purchased', (_event, games) => {
-        purchasedGames = games || { slotMachine: false };
+        purchasedGames = games || { slotMachine: false, solver: false };
         updateGameVisibility();
     });
     
@@ -182,6 +182,9 @@ window.addEventListener('DOMContentLoaded', () => {
     ipcRenderer.on('game:purchased', (_event, gameId) => {
         if (gameId === 'slotMachine') {
             purchasedGames.slotMachine = true;
+            updateGameVisibility();
+        } else if (gameId === 'solver') {
+            purchasedGames.solver = true;
             updateGameVisibility();
         }
     });
@@ -194,6 +197,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 slotMachineCard.style.display = 'none'; // Hide if purchased
             } else {
                 slotMachineCard.style.display = ''; // Show if not purchased
+            }
+        }
+        const solverCard = document.getElementById('solverGameCard');
+        if (solverCard) {
+            if (purchasedGames.solver) {
+                solverCard.style.display = 'none'; // Hide if purchased
+            } else {
+                solverCard.style.display = ''; // Show if not purchased
             }
         }
     }
@@ -415,6 +426,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 ipcRenderer.send('shop:buy', {
                     type: 'game',
                     id: 'slotMachine',
+                    gameCost: cost
+                });
+            } else if (item === 'solver') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'game',
+                    id: 'solver',
                     gameCost: cost
                 });
             }

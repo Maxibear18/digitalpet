@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solver</title>
+    <link rel="stylesheet" href="solver.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="solver.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Solver</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="money-info">
+                    <div class="money-label">Your Money:</div>
+                    <div class="money-display" id="playerMoney">$0</div>
+                </div>
+                <div class="score-info">
+                    <div class="score-label">Correct:</div>
+                    <div class="score-display" id="correctCount">0</div>
+                </div>
+                <div class="mistakes-info">
+                    <div class="mistakes-label">Mistakes:</div>
+                    <div class="mistakes-display" id="mistakesCount">0 / 3</div>
+                </div>
+                <div class="level-info">
+                    <div class="level-label">Level:</div>
+                    <div class="level-display" id="levelDisplay">1</div>
+                </div>
+            </div>
+            
+            <div class="game-area">
+                <div class="problem-container">
+                    <div class="problem-text" id="problemText">Get ready!</div>
+                    <div class="timer-container">
+                        <div class="timer-label">Time:</div>
+                        <div class="timer-display" id="timerDisplay">15</div>
+                    </div>
+                    <div class="pet-bubble">
+                        <img id="petSprite" src="sprites/basic pets/botamon/botamon.png" alt="Pet">
+                    </div>
+                </div>
+                
+                <div class="answer-container">
+                    <input type="number" id="answerInput" class="answer-input" placeholder="Enter answer..." disabled>
+                    <button class="control-btn" id="submitBtn" disabled>Submit</button>
+                </div>
+                
+                <div class="result-message" id="resultMessage">Click Start to begin!</div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="startBtn">Start Game</button>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Solver</h2>
+                        <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>Objective:</strong> Solve math problems as quickly as you can!</p>
+                        <p><strong>How to Play:</strong></p>
+                        <ul>
+                            <li>Click "Start Game" to begin</li>
+                            <li>You have 15 seconds to solve each problem</li>
+                            <li>Enter your answer and click "Submit"</li>
+                            <li>Every 3 correct answers earns you $12</li>
+                            <li>Problems get harder every 3 correct answers</li>
+                            <li>You have 3 mistakes before the game ends</li>
+                        </ul>
+                        <p><strong>Game Over:</strong> The game ends when you run out of time, answer incorrectly 3 times, or answer incorrectly.</p>
+                        <p><strong>Pet Effects:</strong> When you lose, your pet gains 10 happiness and 10 experience, but loses 10 sleep and 5 hunger.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
