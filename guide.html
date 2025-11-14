@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guide</title>
+    <link rel="stylesheet" href="guide.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="guide-container">
+        <header class="guide-header">
+            <h1>Game Guide</h1>
+        </header>
+        
+        <nav class="guide-tabs">
+            <button class="guide-tab active" data-tab="intro">Intro</button>
+            <button class="guide-tab" data-tab="pet">Pet Guide</button>
+            <button class="guide-tab" data-tab="shop">Shop</button>
+            <button class="guide-tab" data-tab="games">Games</button>
+            <button class="guide-tab" data-tab="eggs">Eggs</button>
+            <button class="guide-tab" data-tab="misc">Misc</button>
+        </nav>
+        
+        <main class="guide-content">
+            <!-- Intro Tab -->
+            <section class="guide-section active" data-section="intro">
+                <h2>Welcome to Digital Pet!</h2>
+                <p>Digital Pet is a desktop pet simulation game where you care for your virtual companion. Feed them, play with them, and watch them grow!</p>
+                
+                <h3>Getting Started</h3>
+                <ol>
+                    <li>Purchase an egg from the Shop (Eggs tab)</li>
+                    <li>Click the egg 10 times to hatch it</li>
+                    <li>Name your pet when prompted</li>
+                    <li>Start caring for your pet by feeding, playing, and keeping them healthy!</li>
+                </ol>
+                
+                <h3>Basic Concepts</h3>
+                <ul>
+                    <li><strong>Stats:</strong> Your pet has four main stats: Health, Hunger, Happiness, and Rest</li>
+                    <li><strong>Money:</strong> You earn $50 every minute automatically</li>
+                    <li><strong>Shop:</strong> Buy food, medicine, toys, games, and eggs</li>
+                    <li><strong>Games:</strong> Play minigames to earn money and affect your pet's stats</li>
+                    <li><strong>Evolution:</strong> Pets can evolve and change forms through experience</li>
+                </ul>
+            </section>
+            
+            <!-- Pet Guide Tab -->
+            <section class="guide-section" data-section="pet">
+                <h2>Pet Guide</h2>
+                
+                <h3>Pet Stats</h3>
+                <div class="stat-info-grid">
+                    <div class="stat-info-card">
+                        <div class="stat-icon">❤️</div>
+                        <h4>Health</h4>
+                        <p><strong>Max:</strong> 100</p>
+                        <p><strong>Increases:</strong> While sleeping (+5 every 4 minutes)</p>
+                        <p><strong>Decreases:</strong> When sick (-10 every 1.5 minutes), or when other stats are at 0</p>
+                        <p><strong>Low Stats Penalty:</strong> -5 per minute if 1 stat is 0, -10 if 2 stats are 0, -15 if all 3 stats are 0</p>
+                    </div>
+                    <div class="stat-info-card">
+                        <div class="stat-icon">🍽️</div>
+                        <h4>Hunger</h4>
+                        <p><strong>Max:</strong> 100</p>
+                        <p><strong>Decay:</strong> -10 every 2 minutes</p>
+                        <p><strong>Restore:</strong> Feed your pet food items from the shop</p>
+                    </div>
+                    <div class="stat-info-card">
+                        <div class="stat-icon">😊</div>
+                        <h4>Happiness</h4>
+                        <p><strong>Max:</strong> 100</p>
+                        <p><strong>Decay:</strong> -10 every 1 minute</p>
+                        <p><strong>Restore:</strong> Play games, use toys, or feed special foods</p>
+                    </div>
+                    <div class="stat-info-card">
+                        <div class="stat-icon">😴</div>
+                        <h4>Rest</h4>
+                        <p><strong>Max:</strong> 100</p>
+                        <p><strong>Decay:</strong> -5 every 1.5 minutes (only when awake)</p>
+                        <p><strong>Increases:</strong> +5 every 45 seconds while sleeping</p>
+                    </div>
+                </div>
+                
+                <h3>Pet States</h3>
+                <ul>
+                    <li><strong>Normal:</strong> Your pet's default state when all needs are met</li>
+                    <li><strong>Sleeping:</strong> Put your pet to sleep via Actions menu. While sleeping:
+                        <ul>
+                            <li>Rest increases (+5 every 45 seconds)</li>
+                            <li>Health increases (+5 every 4 minutes)</li>
+                            <li>Rest decay stops</li>
+                            <li>Hunger and Happiness still decay</li>
+                        </ul>
+                    </li>
+                    <li><strong>Exercising:</strong> Put your pet to exercise via Actions menu. Increases experience over time</li>
+                    <li><strong>Sick:</strong> Your pet can get sick if waste count reaches 3. When sick:
+                        <ul>
+                            <li>Health decreases (-10 every 1.5 minutes)</li>
+                            <li>Feed medicine to cure them</li>
+                        </ul>
+                    </li>
+                    <li><strong>Dead:</strong> If health reaches 0, your pet dies. You'll need to buy a new egg</li>
+                </ul>
+                
+                <h3>Waste System</h3>
+                <p>Your pet produces waste over time. If waste count reaches 3, your pet will get sick. Clean up waste by clicking on it in the pet window.</p>
+                
+                <h3>Experience & Evolution</h3>
+                <p>Your pet gains experience from:</p>
+                <ul>
+                    <li>Playing games</li>
+                    <li>Exercising</li>
+                    <li>Using certain toys</li>
+                    <li>Eating food</li>
+                    <li>Petting your pet</li>
+                    <li>Moving your pet around</li>
+                    <li>Passive gain over time (every 3 minutes)</li>
+                </ul>
+                <p>Each pet can evolve 4 times, changing forms at specific experience thresholds:</p>
+                <ul>
+                    <li><strong>Stage 1 → Stage 2:</strong> Reach 300 experience</li>
+                    <li><strong>Stage 2 → Stage 3:</strong> Reach 450 experience</li>
+                    <li><strong>Stage 3 → Stage 4:</strong> Reach 650 experience</li>
+                    <li><strong>Stage 4:</strong> Final form (no further evolution)</li>
+                </ul>
+                <p>When your pet evolves, experience resets to 0 and the experience threshold increases for the next evolution. Evolution increases the pet's value when selling.</p>
+            </section>
+            
+            <!-- Shop Tab -->
+            <section class="guide-section" data-section="shop">
+                <h2>Shop Guide</h2>
+                
+                <h3>Food Items</h3>
+                <div class="item-list">
+                    <div class="item-entry">
+                        <strong>Cherry</strong> - $15: Restores 10 hunger
+                    </div>
+                    <div class="item-entry">
+                        <strong>Riceball</strong> - $25: Restores 15 hunger
+                    </div>
+                    <div class="item-entry">
+                        <strong>Sandwich</strong> - $35: Restores 25 hunger
+                    </div>
+                    <div class="item-entry">
+                        <strong>Meat</strong> - $45: Restores 35 hunger
+                    </div>
+                    <div class="item-entry">
+                        <strong>Cake</strong> - $60: Restores 50 hunger
+                    </div>
+                    <div class="item-entry">
+                        <strong>Ice Cream</strong> - $40: Restores 15 hunger and 15 happiness
+                    </div>
+                    <div class="item-entry">
+                        <strong>Coffee</strong> - $30: Restores 10 hunger and 20 rest
+                    </div>
+                </div>
+                
+                <h3>Medicine</h3>
+                <div class="item-list">
+                    <div class="item-entry">
+                        <strong>Medicine</strong> - $50: Cures your pet's sickness
+                    </div>
+                </div>
+                
+                <h3>Toys</h3>
+                <div class="item-list">
+                    <div class="item-entry">
+                        <strong>Bubble Wand</strong> - $200: Increases happiness recovery by 30% for 20 minutes
+                    </div>
+                    <div class="item-entry">
+                        <strong>Chimes</strong> - $175: Increases rest recovery by 30% for 15 minutes
+                    </div>
+                    <div class="item-entry">
+                        <strong>Calculator</strong> - $275: Increases money earned from minigames by 30% for 20 minutes
+                    </div>
+                    <div class="item-entry">
+                        <strong>Music Player</strong> - $250: Increases happiness recovery by 30% for 25 minutes
+                    </div>
+                    <div class="item-entry">
+                        <strong>Paddle</strong> - $350: Increases experience gains by 30% for 15 minutes
+                    </div>
+                    <div class="item-entry">
+                        <strong>Pudding</strong> - $225: Increases hunger recovery by 30% for 25 minutes
+                    </div>
+                </div>
+                <p><em>Note: Toys are consumable - they activate when purchased and last for their duration. Multiple toys can be active at once!</em></p>
+                
+                <h3>Games</h3>
+                <p>Games must be purchased before you can play them. See the "Games" tab for details on each game.</p>
+                
+                <h3>Eggs</h3>
+                <p>See the "Eggs" tab for information about different egg types.</p>
+                
+                <h3>Selling Your Pet</h3>
+                <p>You can sell your pet in the Sell tab. The base price is $250, plus 20% per evolution stage. For example:</p>
+                <ul>
+                    <li>Stage 1 (no evolution): $250</li>
+                    <li>Stage 2 (1 evolution): $300</li>
+                    <li>Stage 3 (2 evolutions): $360</li>
+                </ul>
+                <p><strong>Warning:</strong> Selling your pet will remove it from your game. You'll need to buy a new egg to get another pet.</p>
+            </section>
+            
+            <!-- Games Tab -->
+            <section class="guide-section" data-section="games">
+                <h2>Games Guide</h2>
+                
+                <div class="game-guide-card">
+                    <h3>🎮 Simon Says</h3>
+                    <p><strong>Cost:</strong> Free (included by default)</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Watch the sequence of colors shown by your pet</li>
+                        <li>Repeat the sequence by clicking the colored quadrants in the same order</li>
+                        <li>Each round adds one more color to the sequence</li>
+                        <li>Get it wrong and the game ends!</li>
+                    </ul>
+                    <p><strong>Rewards:</strong> $2 for each round completed successfully</p>
+                    <p><strong>Pet Effects (on game over):</strong> -5 hunger, -5 rest, +5 happiness</p>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>🧠 Memory Match</h3>
+                    <p><strong>Cost:</strong> Free (included by default)</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Click cards to flip them over</li>
+                        <li>Find matching pairs of pets and food</li>
+                        <li>If they match, they stay flipped. If not, they flip back</li>
+                        <li>Match all pairs before making 5 mistakes!</li>
+                    </ul>
+                    <p><strong>Rewards:</strong></p>
+                    <ul>
+                        <li><strong>Win:</strong> $50, +10 happiness, -5 sleep, -5 hunger, +15 experience</li>
+                        <li><strong>Lose:</strong> $3 per match made, +5 happiness, -5 sleep, -5 hunger, +7 experience</li>
+                    </ul>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>⚡ Reaction Time</h3>
+                    <p><strong>Cost:</strong> Free (included by default)</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Press SPACEBAR to start the timer</li>
+                        <li>Watch the timer count up</li>
+                        <li>Press SPACEBAR again when you think it's at exactly 10 seconds</li>
+                        <li>The closer you get, the more money you earn!</li>
+                    </ul>
+                    <p><strong>Rewards:</strong></p>
+                    <ul>
+                        <li><strong>Exactly 10.00 seconds:</strong> $55</li>
+                        <li><strong>0.1 or 0.2 seconds off:</strong> $30 (halved if over 10s)</li>
+                        <li><strong>0.3 seconds off:</strong> $25 (halved if over 10s)</li>
+                        <li><strong>0.5 seconds off:</strong> $20 (halved if over 10s)</li>
+                        <li><strong>0.7 seconds off:</strong> $15 (halved if over 10s)</li>
+                        <li><strong>1.0 second off:</strong> $10 (halved if over 10s)</li>
+                        <li><strong>More than 1 second off:</strong> $0</li>
+                    </ul>
+                    <p><strong>Pet Effects:</strong> -5 sleep, -5 hunger, +5 experience, +5 happiness</p>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>🎰 Slot Machine</h3>
+                    <p><strong>Cost:</strong> $500</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Bet between $0 and $100</li>
+                        <li>Click "Spin" to spin the reels</li>
+                        <li>Match 3 of the same icon to win money</li>
+                        <li>Different icons have different payout rates</li>
+                    </ul>
+                    <p><strong>Pet Effects:</strong> None (gambling doesn't affect your pet)</p>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>🔢 Solver</h3>
+                    <p><strong>Cost:</strong> $300</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Solve math problems within 15 seconds</li>
+                        <li>Enter your answer and click "Submit"</li>
+                        <li>Every 3 correct answers earns you $12</li>
+                        <li>Problems get harder every 3 correct answers</li>
+                        <li>You have 3 mistakes before game over</li>
+                        <li>Game ends on wrong answer, timeout, or 3 mistakes</li>
+                    </ul>
+                    <p><strong>Pet Effects (on game over):</strong> +10 happiness, +10 experience, -10 sleep, -5 hunger</p>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>🎯 Shooter</h3>
+                    <p><strong>Cost:</strong> $350</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Click on food items as they fly across the screen (+1 point each)</li>
+                        <li>Avoid clicking on baby pets (-1 point each)</li>
+                        <li>Every 5 points earns you $8</li>
+                        <li>Game lasts 60 seconds</li>
+                        <li>Items move faster every 10 seconds</li>
+                        <li>Items spawn from all sides of the screen</li>
+                    </ul>
+                    <p><strong>Pet Effects (after game):</strong> -10 sleep, -10 hunger, +15 experience</p>
+                </div>
+                
+                <div class="game-guide-card">
+                    <h3>🐍 Snake</h3>
+                    <p><strong>Cost:</strong> $325</p>
+                    <p><strong>How to Play:</strong></p>
+                    <ul>
+                        <li>Use arrow keys or WASD to move your pet snake</li>
+                        <li>Collect food items to grow longer</li>
+                        <li>Every 3 pets (snake segments) collected earns you $6</li>
+                        <li>Game over if you hit the walls or yourself</li>
+                        <li>Played on a 7x7 grid</li>
+                    </ul>
+                    <p><strong>Pet Effects (after game):</strong> +10 experience, +10 happiness, -10 sleep, -5 hunger</p>
+                </div>
+            </section>
+            
+            <!-- Eggs Tab -->
+            <section class="guide-section" data-section="eggs">
+                <h2>Eggs Guide</h2>
+                
+                <div class="egg-info-card">
+                    <h3>🥚 Digi Egg Basic</h3>
+                    <p><strong>Cost:</strong> $30</p>
+                    <p><strong>Description:</strong> A basic egg that can hatch into a starter pet.</p>
+                    <p><strong>Possible Pets:</strong> Possibility of 4 different types</p>
+                    <p><strong>Evolution:</strong> These pets can evolve 4 times, changing forms</p>
+                    <p><strong>Hatching:</strong> Click the egg 10 times to hatch</p>
+                </div>
+                
+                <div class="egg-info-card">
+                    <h3>🥚 Digi Egg Inter</h3>
+                    <p><strong>Cost:</strong> $50</p>
+                    <p><strong>Description:</strong> An intermediate egg that can hatch into a pet.</p>
+                    <p><strong>Possible Pets:</strong> Possibility of 4 different types</p>
+                    <p><strong>Evolution:</strong> These pets can evolve 4 times, changing forms</p>
+                    <p><strong>Hatching:</strong> Click the egg 10 times to hatch</p>
+                </div>
+                
+                <h3>Egg Mechanics</h3>
+                <ul>
+                    <li>You can only have one egg at a time</li>
+                    <li>Once you have an egg, you cannot buy another until you hatch or sell your current pet</li>
+                    <li>Click the egg 10 times in the pet window to hatch it</li>
+                    <li>After hatching, you'll be prompted to name your pet</li>
+                    <li>Once hatched, your pet's stats will start decaying</li>
+                </ul>
+            </section>
+            
+            <!-- Misc Tab -->
+            <section class="guide-section" data-section="misc">
+                <h2>Miscellaneous</h2>
+                
+                <h3>Money System</h3>
+                <ul>
+                    <li>You earn $50 every minute automatically</li>
+                    <li>Play minigames to earn additional money</li>
+                    <li>Sell your pet to get money (but you'll lose your pet!)</li>
+                    <li>Starting money: $1,500</li>
+                </ul>
+                
+                <h3>Pet Naming</h3>
+                <p>When you hatch an egg, you'll be prompted to name your pet. The pet's name will appear in the window title and can be used to identify your pet.</p>
+                
+                <h3>Actions Menu</h3>
+                <p>Use the Actions menu (top menu bar) to:</p>
+                <ul>
+                    <li><strong>Sleep/Wake Up:</strong> Put your pet to sleep or wake them up</li>
+                    <li><strong>Exercise/Stop Exercise:</strong> Start or stop exercising your pet</li>
+                </ul>
+                <p><em>Note: Actions are only available after your egg has hatched.</em></p>
+                
+                <h3>Windows</h3>
+                <ul>
+                    <li><strong>Pet Window:</strong> Your main pet display - drag your pet around, feed them, clean waste</li>
+                    <li><strong>Shop:</strong> Buy items, games, and eggs</li>
+                    <li><strong>Games:</strong> Access your purchased minigames</li>
+                    <li><strong>Settings:</strong> Test features and reset your game</li>
+                    <li><strong>Guide:</strong> This window - helpful information about the game</li>
+                </ul>
+                
+                <h3>Save System</h3>
+                <p>Your game progress is automatically saved:</p>
+                <ul>
+                    <li>Pet stats and state</li>
+                    <li>Money and purchased items</li>
+                    <li>Pet name and evolution stage</li>
+                    <li>Active toys and their timers</li>
+                </ul>
+                <p>Your save file persists even when you close the game. Use the Settings menu to reset your game if needed.</p>
+                
+                <h3>Tips & Tricks</h3>
+                <ul>
+                    <li>Keep your pet's stats above 0 to prevent health decay</li>
+                    <li>Put your pet to sleep regularly to restore health and rest</li>
+                    <li>Use toys strategically - they stack, so multiple toys can be active at once</li>
+                    <li>Play games to earn money while also affecting your pet's stats</li>
+                    <li>Clean up waste regularly to prevent sickness</li>
+                    <li>Exercise your pet to gain experience for evolution</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+    
+    <script src="guide.js"></script>
+</body>
+</html>
+

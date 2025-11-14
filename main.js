@@ -7,6 +7,7 @@ let shopWindow;
 let statsWindow;
 let gamesWindow;
 let settingsWindow = null;
+let guideWindow = null;
 let nameDialogWindow = null; // Name dialog window
 let petName = 'Digital Pet'; // Default pet name
 let isPetSleeping = false; // Track pet sleep state for menu updates
@@ -627,6 +628,12 @@ function buildMenu() {
       click: () => {
         openSettingsWindow();
       }
+    },
+    {
+      label: 'Guide',
+      click: () => {
+        openGuideWindow();
+      }
     }
   ];
   const menu = Menu.buildFromTemplate(template);
@@ -704,6 +711,34 @@ function openSettingsWindow() {
   
   settingsWindow.on('closed', () => {
     settingsWindow = null;
+  });
+}
+
+function openGuideWindow() {
+  if (guideWindow && !guideWindow.isDestroyed()) {
+    guideWindow.focus();
+    return;
+  }
+  
+  guideWindow = new BrowserWindow({
+    width: 800,
+    height: 700,
+    resizable: true,
+    title: 'Guide',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  
+  guideWindow.loadFile('guide.html');
+  
+  guideWindow.on('closed', () => {
+    guideWindow = null;
   });
 }
 
