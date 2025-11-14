@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-let purchasedGames = { slotMachine: false, solver: false };
+let purchasedGames = { slotMachine: false, solver: false, shooter: false };
 
 window.addEventListener('DOMContentLoaded', () => {
     const playButtons = Array.from(document.querySelectorAll('.play-btn'));
@@ -24,7 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Listen for purchased games updates
 ipcRenderer.on('games:purchased', (_event, games) => {
-    purchasedGames = games || { slotMachine: false, solver: false };
+    purchasedGames = games || { slotMachine: false, solver: false, shooter: false };
     updateGameVisibility();
 });
 
@@ -35,6 +35,9 @@ ipcRenderer.on('game:unlocked', (_event, gameId) => {
         updateGameVisibility();
     } else if (gameId === 'solver') {
         purchasedGames.solver = true;
+        updateGameVisibility();
+    } else if (gameId === 'shooter') {
+        purchasedGames.shooter = true;
         updateGameVisibility();
     }
 });
@@ -57,6 +60,16 @@ function updateGameVisibility() {
             solverCard.style.display = ''; // Show if purchased
         } else {
             solverCard.style.display = 'none'; // Hide if not purchased
+        }
+    }
+    
+    // Show/hide shooter game based on purchase status
+    const shooterCard = document.querySelector('[data-game="shooter"]')?.closest('.game-card');
+    if (shooterCard) {
+        if (purchasedGames.shooter) {
+            shooterCard.style.display = ''; // Show if purchased
+        } else {
+            shooterCard.style.display = 'none'; // Hide if not purchased
         }
     }
 }

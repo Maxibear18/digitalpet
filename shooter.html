@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shooter</title>
+    <link rel="stylesheet" href="shooter.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="shooter.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Shooter</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="money-info">
+                    <div class="money-label">Your Money:</div>
+                    <div class="money-display" id="playerMoney">$0</div>
+                </div>
+                <div class="score-info">
+                    <div class="score-label">Score:</div>
+                    <div class="score-display" id="scoreDisplay">0</div>
+                </div>
+                <div class="time-info">
+                    <div class="time-label">Time:</div>
+                    <div class="time-display" id="timeDisplay">60</div>
+                </div>
+            </div>
+            
+            <div class="game-area" id="gameArea">
+                <div class="game-start-message" id="startMessage">Click Start to begin!</div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="startBtn">Start Game</button>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Shooter</h2>
+                        <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>Objective:</strong> Click on food items as they fall! Avoid clicking on baby pets!</p>
+                        <p><strong>How to Play:</strong></p>
+                        <ul>
+                            <li>Click "Start Game" to begin</li>
+                            <li>Click on food items to earn 1 point each</li>
+                            <li>Avoid clicking on baby pets - they cost you 1 point!</li>
+                            <li>Every 5 points earns you $8</li>
+                            <li>Game lasts 60 seconds</li>
+                            <li>Items move faster every 10 seconds</li>
+                        </ul>
+                        <p><strong>Pet Effects:</strong> After the game, your pet loses 10 sleep and 10 hunger, but gains 15 experience.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+

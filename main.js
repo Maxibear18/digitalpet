@@ -18,7 +18,8 @@ let hasEgg = false; // Track if player has purchased an egg (prevents buying mor
 // Purchased games tracking
 let purchasedGames = {
   slotMachine: false, // Track if slot machine has been purchased
-  solver: false // Track if solver has been purchased
+  solver: false, // Track if solver has been purchased
+  shooter: false // Track if shooter has been purchased
 };
 
 // Store stats even when stats window is closed
@@ -55,6 +56,7 @@ const ITEM_COSTS = {
   eggInter: 50,
   slotMachine: 500,
   solver: 300,
+  shooter: 350,
   bubblewand: 200,
   calculator: 325,
   chimes: 250,
@@ -288,6 +290,18 @@ function buildMenu() {
           });
         }
         
+        // Add Shooter if purchased
+        if (purchasedGames.shooter) {
+          gamesSubmenu.push({
+            label: 'Shooter',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openShooterWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
+          });
+        }
+        
         return gamesSubmenu;
       })()
     },
@@ -508,6 +522,20 @@ ipcMain.on('shop:buy', (_event, payload) => {
     // Notify games window if it's open
     if (gamesWindow && !gamesWindow.isDestroyed()) {
       gamesWindow.webContents.send('game:unlocked', 'solver');
+    }
+  }
+  
+  if (itemId === 'shooter') {
+    purchasedGames.shooter = true;
+    // Rebuild menu to include the new game
+    buildMenu();
+    // Notify shop window that game was purchased
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('game:purchased', 'shooter');
+    }
+    // Notify games window if it's open
+    if (gamesWindow && !gamesWindow.isDestroyed()) {
+      gamesWindow.webContents.send('game:unlocked', 'shooter');
     }
   }
   
@@ -784,6 +812,7 @@ let memoryMatchWindow = null;
 let reactionTimeWindow = null;
 let slotMachineWindow = null;
 let solverWindow = null;
+let shooterWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
@@ -795,6 +824,8 @@ ipcMain.on('game:open', (_event, gameName) => {
     openSlotMachineWindow();
   } else if (gameName === 'solver') {
     openSolverWindow();
+  } else if (gameName === 'shooter') {
+    openShooterWindow();
   }
 });
 
@@ -988,6 +1019,37 @@ function openSolverWindow() {
   
   solverWindow.on('closed', () => {
     solverWindow = null;
+  });
+}
+
+// Open Shooter game window
+function openShooterWindow() {
+  if (shooterWindow && !shooterWindow.isDestroyed()) {
+    shooterWindow.focus();
+    return;
+  }
+  shooterWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    resizable: true,
+    title: 'Shooter',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (shooterWindow && !shooterWindow.isDestroyed()) {
+    shooterWindow.setMenu(null);
+    shooterWindow.setMenuBarVisibility(false);
+  }
+  shooterWindow.loadFile('shooter.html');
+  
+  shooterWindow.on('closed', () => {
+    shooterWindow = null;
   });
 }
 
