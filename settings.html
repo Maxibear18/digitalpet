@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+    <div class="settings-container">
+        <h1>Settings</h1>
+        
+        <div class="settings-section">
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Gain Money (TEST)</div>
+                    <div class="setting-description">Add $250 to your account. This is a test feature for development purposes.</div>
+                </div>
+                <button class="test-btn" id="gainMoneyBtn">Gain $250</button>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Dark Mode</div>
+                    <div class="setting-description">Toggle dark mode theme. Coming soon!</div>
+                </div>
+                <button class="dark-mode-btn" id="darkModeBtn" disabled>Dark Mode</button>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-title">Reset Game</div>
+                    <div class="setting-description">Delete your save file to start fresh. This will reset all progress, stats, money, and purchased items.</div>
+                </div>
+                <button class="reset-btn" id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="settings.js"></script>
+</body>
+</html>
+

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const { loadSave, saveGame, deleteSave } = require('./saveManager');
 
@@ -6,6 +6,7 @@ let petWindow;
 let shopWindow;
 let statsWindow;
 let gamesWindow;
+let settingsWindow = null;
 let nameDialogWindow = null; // Name dialog window
 let petName = 'Digital Pet'; // Default pet name
 let isPetSleeping = false; // Track pet sleep state for menu updates
@@ -129,6 +130,7 @@ let lowStatsHealthDecayIntervalId = null;
 // Save system - helper functions
 let saveDebounceTimer = null;
 const SAVE_DEBOUNCE_DELAY = 1000; // Save 1 second after last change
+let isResetting = false; // Flag to prevent saving during reset
 
 /**
  * Load game state from save file
@@ -619,6 +621,12 @@ function buildMenu() {
       click: () => {
         openShopWindow();
       }
+    },
+    {
+      label: 'Settings',
+      click: () => {
+        openSettingsWindow();
+      }
     }
   ];
   const menu = Menu.buildFromTemplate(template);
@@ -663,6 +671,39 @@ function openShopWindow() {
   
   shopWindow.on('closed', () => {
     shopWindow = null;
+  });
+}
+
+function openSettingsWindow() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.focus();
+    return;
+  }
+  
+  settingsWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    resizable: false,
+    title: 'Settings',
+    minimizable: true,
+    maximizable: false,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.setMenu(null);
+    settingsWindow.setMenuBarVisibility(false);
+  }
+  
+  settingsWindow.loadFile('settings.html');
+  
+  settingsWindow.on('closed', () => {
+    settingsWindow = null;
   });
 }
 
@@ -752,9 +793,11 @@ app.whenReady().then(() => {
   // Hunger decay is started in createPetWindow(), but ensure it runs even if window creation has issues
 });
 
-// Save game before quitting
+// Save game before quitting (unless we're resetting)
 app.on('before-quit', () => {
-  saveGameState();
+  if (!isResetting) {
+    saveGameState();
+  }
 });
 
 // Quit when all windows are closed
@@ -1192,6 +1235,71 @@ ipcMain.on('toy:deactivated', (_event, toyId) => {
   activeToys = activeToys.filter(toy => toy.toyId !== toyId);
   queueSave(); // Save after toy deactivation
   console.log(`Toy ${toyId} deactivated`);
+});
+
+// Handle gain money request from settings (test feature)
+ipcMain.on('settings:gainMoney', (_event, amount) => {
+  money += amount;
+  queueSave(); // Save after money change
+  sendMoneyUpdate();
+  console.log(`Test: Gained $${amount}. New total: $${money}`);
+});
+
+// Handle reset game request from settings
+ipcMain.on('settings:resetGame', async () => {
+  // Show confirmation dialog
+  const result = await dialog.showMessageBox(settingsWindow || petWindow, {
+    type: 'warning',
+    title: 'Reset Game',
+    message: 'Are you sure you want to reset?',
+    detail: 'This will delete your save file and close the game. All progress will be lost. This cannot be undone.',
+    buttons: ['Yes', 'No'],
+    defaultId: 1, // Default to "No"
+    cancelId: 1
+  });
+  
+  if (result.response === 0) { // User clicked "Yes"
+    // Set resetting flag to prevent saves
+    isResetting = true;
+    
+    // Clear any pending saves
+    if (saveDebounceTimer) {
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = null;
+    }
+    
+    // Delete save file - ensure it completes before closing
+    console.log('Deleting save file...');
+    const deleted = deleteSave();
+    
+    if (deleted) {
+      console.log('Save file deleted successfully. Game will close.');
+    } else {
+      console.error('Failed to delete save file, but continuing with reset.');
+      // Try one more time after a brief delay
+      setTimeout(() => {
+        const retryDeleted = deleteSave();
+        if (retryDeleted) {
+          console.log('Save file deleted on retry.');
+        } else {
+          console.error('Save file deletion failed on retry as well.');
+        }
+      }, 200);
+    }
+    
+    // Delay to ensure file deletion completes before closing
+    setTimeout(() => {
+      // Close all windows
+      BrowserWindow.getAllWindows().forEach(window => {
+        if (!window.isDestroyed()) {
+          window.close();
+        }
+      });
+      
+      // Quit the app
+      app.quit();
+    }, 500);
+  }
 });
 
 // Handle money request from any window

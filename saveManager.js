@@ -157,17 +157,58 @@ function saveGame(gameState) {
  * Delete save file (for new game/reset)
  */
 function deleteSave() {
-    const savePath = getSavePath();
-    
     try {
+        const userDataPath = app.getPath('userData');
+        const saveDir = path.join(userDataPath, 'digitalpet');
+        const savePath = path.join(saveDir, SAVE_FILE_NAME);
+        
+        console.log('Attempting to delete save file at:', savePath);
+        console.log('Save directory exists:', fs.existsSync(saveDir));
+        console.log('Save file exists:', fs.existsSync(savePath));
+        
         if (fs.existsSync(savePath)) {
-            fs.unlinkSync(savePath);
-            console.log('Save file deleted');
-            return true;
+            // Try to delete the file
+            try {
+                fs.unlinkSync(savePath);
+                console.log('File unlinkSync completed');
+                
+                // Wait a moment and verify deletion
+                // Use a small delay to ensure filesystem has processed the deletion
+                const checkDeletion = () => {
+                    if (fs.existsSync(savePath)) {
+                        console.error('Warning: Save file still exists after deletion attempt');
+                        // Try one more time
+                        try {
+                            fs.unlinkSync(savePath);
+                            if (fs.existsSync(savePath)) {
+                                console.error('Failed to delete save file after second attempt');
+                                return false;
+                            }
+                        } catch (retryError) {
+                            console.error('Retry deletion failed:', retryError);
+                            return false;
+                        }
+                    }
+                    console.log('Save file deleted and verified');
+                    return true;
+                };
+                
+                // Immediate check
+                return checkDeletion();
+            } catch (unlinkError) {
+                console.error('Error during unlinkSync:', unlinkError);
+                console.error('Error code:', unlinkError.code);
+                console.error('Error message:', unlinkError.message);
+                return false;
+            }
+        } else {
+            console.log('Save file does not exist (already deleted or never created)');
+            return true; // Consider it successful if file doesn't exist
         }
-        return false;
     } catch (error) {
-        console.error('Error deleting save file:', error);
+        console.error('Error in deleteSave function:', error);
+        console.error('Error details:', error.message);
+        console.error('Error stack:', error.stack);
         return false;
     }
 }
