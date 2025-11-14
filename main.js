@@ -19,7 +19,8 @@ let hasEgg = false; // Track if player has purchased an egg (prevents buying mor
 let purchasedGames = {
   slotMachine: false, // Track if slot machine has been purchased
   solver: false, // Track if solver has been purchased
-  shooter: false // Track if shooter has been purchased
+  shooter: false, // Track if shooter has been purchased
+  snake: false // Track if snake has been purchased
 };
 
 // Store stats even when stats window is closed
@@ -57,6 +58,7 @@ const ITEM_COSTS = {
   slotMachine: 500,
   solver: 300,
   shooter: 350,
+  snake: 325,
   bubblewand: 200,
   calculator: 325,
   chimes: 250,
@@ -302,6 +304,18 @@ function buildMenu() {
           });
         }
         
+        // Add Snake if purchased
+        if (purchasedGames.snake) {
+          gamesSubmenu.push({
+            label: 'Snake',
+            click: () => {
+              if (!isEggHatched) return; // Prevent action if pet not hatched
+              openSnakeWindow();
+            },
+            enabled: isEggHatched // Disable until pet is hatched
+          });
+        }
+        
         return gamesSubmenu;
       })()
     },
@@ -536,6 +550,20 @@ ipcMain.on('shop:buy', (_event, payload) => {
     // Notify games window if it's open
     if (gamesWindow && !gamesWindow.isDestroyed()) {
       gamesWindow.webContents.send('game:unlocked', 'shooter');
+    }
+  }
+  
+  if (itemId === 'snake') {
+    purchasedGames.snake = true;
+    // Rebuild menu to include the new game
+    buildMenu();
+    // Notify shop window that game was purchased
+    if (shopWindow && !shopWindow.isDestroyed()) {
+      shopWindow.webContents.send('game:purchased', 'snake');
+    }
+    // Notify games window if it's open
+    if (gamesWindow && !gamesWindow.isDestroyed()) {
+      gamesWindow.webContents.send('game:unlocked', 'snake');
     }
   }
   
@@ -813,6 +841,7 @@ let reactionTimeWindow = null;
 let slotMachineWindow = null;
 let solverWindow = null;
 let shooterWindow = null;
+let snakeWindow = null;
 ipcMain.on('game:open', (_event, gameName) => {
   if (gameName === 'simon-says') {
     openSimonSaysWindow();
@@ -826,6 +855,8 @@ ipcMain.on('game:open', (_event, gameName) => {
     openSolverWindow();
   } else if (gameName === 'shooter') {
     openShooterWindow();
+  } else if (gameName === 'snake') {
+    openSnakeWindow();
   }
 });
 
@@ -1050,6 +1081,42 @@ function openShooterWindow() {
   
   shooterWindow.on('closed', () => {
     shooterWindow = null;
+  });
+}
+
+// Open Snake game window
+function openSnakeWindow() {
+  if (snakeWindow && !snakeWindow.isDestroyed()) {
+    snakeWindow.focus();
+    return;
+  }
+  snakeWindow = new BrowserWindow({
+    width: 600,
+    height: 700,
+    resizable: true,
+    title: 'Snake',
+    minimizable: true,
+    maximizable: true,
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      backgroundThrottling: false
+    }
+  });
+  if (snakeWindow && !snakeWindow.isDestroyed()) {
+    snakeWindow.setMenu(null);
+    snakeWindow.setMenuBarVisibility(false);
+  }
+  snakeWindow.loadFile('snake.html');
+  
+  // Send pet type to game window when it's ready
+  snakeWindow.webContents.once('did-finish-load', () => {
+    snakeWindow.webContents.send('game:petType', currentPetType, currentEvolutionStage);
+  });
+  
+  snakeWindow.on('closed', () => {
+    snakeWindow = null;
   });
 }
 

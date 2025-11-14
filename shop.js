@@ -5,7 +5,7 @@ let hasPet = false; // Track if pet exists (egg hatched)
 let hasEgg = false; // Track if player has purchased an egg
 let shopPetType = 'botamon';
 let shopEvolutionStage = 1;
-let purchasedGames = { slotMachine: false, solver: false, shooter: false }; // Track purchased games
+let purchasedGames = { slotMachine: false, solver: false, shooter: false, snake: false }; // Track purchased games
 
 window.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('.shop-tab'));
@@ -174,7 +174,7 @@ window.addEventListener('DOMContentLoaded', () => {
     
     // Listen for purchased games updates
     ipcRenderer.on('games:purchased', (_event, games) => {
-        purchasedGames = games || { slotMachine: false, solver: false, shooter: false };
+        purchasedGames = games || { slotMachine: false, solver: false, shooter: false, snake: false };
         updateGameVisibility();
     });
     
@@ -188,6 +188,9 @@ window.addEventListener('DOMContentLoaded', () => {
             updateGameVisibility();
         } else if (gameId === 'shooter') {
             purchasedGames.shooter = true;
+            updateGameVisibility();
+        } else if (gameId === 'snake') {
+            purchasedGames.snake = true;
             updateGameVisibility();
         }
     });
@@ -216,6 +219,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 shooterCard.style.display = 'none'; // Hide if purchased
             } else {
                 shooterCard.style.display = ''; // Show if not purchased
+            }
+        }
+        const snakeCard = document.getElementById('snakeGameCard');
+        if (snakeCard) {
+            if (purchasedGames.snake) {
+                snakeCard.style.display = 'none'; // Hide if purchased
+            } else {
+                snakeCard.style.display = ''; // Show if not purchased
             }
         }
     }
@@ -449,6 +460,12 @@ window.addEventListener('DOMContentLoaded', () => {
                 ipcRenderer.send('shop:buy', {
                     type: 'game',
                     id: 'shooter',
+                    gameCost: cost
+                });
+            } else if (item === 'snake') {
+                ipcRenderer.send('shop:buy', {
+                    type: 'game',
+                    id: 'snake',
                     gameCost: cost
                 });
             }

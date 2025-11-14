@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+    <link rel="stylesheet" href="snake.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700&display=swap" rel="stylesheet">
+    <script defer src="snake.js"></script>
+    <style>
+        /* Fallback if stylesheet fails */
+        body { font-family: 'Nunito', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="game-window">
+        <header class="game-header">
+            <div class="game-title">Snake</div>
+            <button class="help-btn" id="helpBtn" title="How to Play">?</button>
+        </header>
+        <main class="game-content">
+            <div class="game-info">
+                <div class="money-info">
+                    <div class="money-label">Your Money:</div>
+                    <div class="money-display" id="playerMoney">$0</div>
+                </div>
+                <div class="score-info">
+                    <div class="score-label">Length:</div>
+                    <div class="score-display" id="lengthDisplay">1</div>
+                </div>
+            </div>
+            
+            <div class="game-area-container">
+                <canvas id="gameCanvas" width="400" height="400"></canvas>
+                <div class="game-overlay" id="gameOverlay">
+                    <div class="overlay-message" id="overlayMessage">Use arrow keys or WASD to move!<br>Click Start to begin!</div>
+                </div>
+            </div>
+            
+            <div class="game-controls">
+                <button class="control-btn" id="startBtn">Start Game</button>
+            </div>
+            
+            <!-- Help Modal -->
+            <div class="help-modal" id="helpModal" style="display: none;">
+                <div class="help-modal-content">
+                    <div class="help-modal-header">
+                        <h2>How to Play Snake</h2>
+                        <button class="close-btn" id="closeHelpBtn">&times;</button>
+                    </div>
+                    <div class="help-modal-body">
+                        <p><strong>Objective:</strong> Control your pet snake and collect food to grow longer!</p>
+                        <p><strong>How to Play:</strong></p>
+                        <ul>
+                            <li>Use arrow keys or WASD to move your pet</li>
+                            <li>Collect food items to grow longer</li>
+                            <li>Every 3 pets collected earns you $6</li>
+                            <li>Don't hit the walls or yourself - game over!</li>
+                        </ul>
+                        <p><strong>Pet Effects:</strong> After the game, your pet gains 10 experience and 10 happiness, but loses 10 sleep and 5 hunger.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
+
