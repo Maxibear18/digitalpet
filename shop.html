@@ -283,7 +283,7 @@
                             <div class="item-name">Digi Egg Basic</div>
                             <div class="item-desc">A mysterious egg that can hatch into a pet. Click it 10 times to hatch!</div>
                             <div class="item-actions">
-                                <button class="buy-btn" data-item="egg1" data-cost="30">Buy - $30</button>
+                                <button class="buy-btn" data-item="egg1" data-cost="300">Buy - $300</button>
                             </div>
                         </div>
                     </div>
@@ -295,7 +295,7 @@
                             <div class="item-name">Digi Egg Inter</div>
                             <div class="item-desc">A mysterious egg that can hatch into a pet. Click it 10 times to hatch!</div>
                             <div class="item-actions">
-                                <button class="buy-btn" data-item="eggInter" data-cost="50">Buy - $50</button>
+                                <button class="buy-btn" data-item="eggInter" data-cost="500">Buy - $500</button>
                             </div>
                         </div>
                     </div>
@@ -308,7 +308,7 @@
                     </div>
                     <div class="sell-info">
                         <div class="sell-title">Sell Your Pet</div>
-                        <div class="sell-desc">Base price $250 + 20% per evolution stage.</div>
+                        <div class="sell-desc">Base price: $250 (basic pets) or $350 (intermediate pets) + 20% per evolution stage.</div>
                         <div class="sell-price">You will receive: <strong id="sellPrice">$0</strong></div>
                         <div class="sell-actions">
                             <button id="sellBtn">Sell Pet</button>
@@ -320,7 +320,7 @@
     </div>
     <style>
         .sell-wrap{display:flex;gap:16px;align-items:center;justify-content:flex-start;padding:16px}
-        .sell-preview{width:180px;height:180px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;border:4px solid #4caf50;background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+        .sell-preview{width:180px;height:180px;min-width:180px;min-height:180px;flex-shrink:0;aspect-ratio:1;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;border:4px solid #4caf50;background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.08)}
         .sell-preview img{width:125%;height:auto;image-rendering:pixelated}
         .sell-info{display:flex;flex-direction:column;gap:8px}
         .sell-title{font-weight:700;font-size:18px}

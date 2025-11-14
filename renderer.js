@@ -429,7 +429,7 @@ let isDead = false; // Pet death state
 
 // Experience and Evolution system
 let experience = 0; // Current experience (hidden stat)
-let EXPERIENCE_MAX = 250; // Experience needed for current evolution threshold
+let EXPERIENCE_MAX = 250; // Experience needed for current evolution threshold (base value, adjusted for egg type)
 const EXPERIENCE_GAIN_EAT = 2; // Experience gained from eating
 const EXPERIENCE_GAIN_PET = 2; // Experience gained from petting
 const EXPERIENCE_GAIN_MOVE = 1; // Experience gained from moving
@@ -555,6 +555,8 @@ window.addEventListener('load', () => {
             health = value;
         } else if (key === 'experience') {
             experience = value;
+            // Set EXPERIENCE_MAX from the loaded max value
+            EXPERIENCE_MAX = max;
         }
         
         loadedStatsCount++;
@@ -759,6 +761,14 @@ window.addEventListener('load', () => {
     ipcRenderer.on('pet:typeUpdate', (_event, petType) => {
         if (petType && PET_TYPES[petType]) {
             currentPetType = petType;
+            // Determine egg type based on pet type (intermediate pets are in 'inter pets' folder)
+            // Check if pet type is an intermediate pet
+            const intermediatePets = ['giromon', 'zurumon', 'yuramon', 'pixiemon', 'pagumon', 'gazimon', 'gizamon', 'tanemon', 'palmon', 'vegimon', 'mamemon', 'monzaemon', 'yukidramon', 'flymon', 'piyomon', 'birdramon'];
+            if (intermediatePets.includes(petType)) {
+                currentEggType = 'intermediate';
+            } else {
+                currentEggType = 'basic';
+            }
             // Reload sprites if pet is already initialized
             if (pet) {
                 const sprites = getWalkSprites();
@@ -2245,10 +2255,15 @@ function playHatchingAnimation() {
     currentPetType = petTypes[randomIndex];
     currentEvolutionStage = 1; // Start at base form
     
+    // Set initial experience threshold based on egg type
+    // Intermediate pets need 50 more experience than basic pets
+    const thresholdBonus = currentEggType === 'intermediate' ? 50 : 0;
+    EXPERIENCE_MAX = 250 + thresholdBonus;
     
-    // Notify main process of pet type
+    // Notify main process of pet type and experience threshold
     try {
         ipcRenderer.send('pet:typeUpdate', currentPetType);
+        ipcRenderer.send('stats:update', { key: 'experience', value: 0, max: EXPERIENCE_MAX });
     } catch (_) {}
     
     // Step 1: Create white overlay
@@ -3211,8 +3226,10 @@ function evolvePet() {
         currentEvolutionStage = nextStage;
 
 		// Update next experience threshold
-		if (currentEvolutionStage === 2) EXPERIENCE_MAX = 400;
-		else if (currentEvolutionStage === 3) EXPERIENCE_MAX = 600;
+		// Intermediate pets need 50 more experience than basic pets
+		const thresholdBonus = currentEggType === 'intermediate' ? 50 : 0;
+		if (currentEvolutionStage === 2) EXPERIENCE_MAX = 400 + thresholdBonus;
+		else if (currentEvolutionStage === 3) EXPERIENCE_MAX = 600 + thresholdBonus;
 
 		// Log new form name
 		const newResolvedType = getResolvedTypeForStage(currentPetType, currentEvolutionStage);

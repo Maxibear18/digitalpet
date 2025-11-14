@@ -59,8 +59,8 @@ const ITEM_COSTS = {
   coffee: 60,
   medicine1: 35,
   medkit1: 50,
-  egg1: 30,
-  eggInter: 50,
+  egg1: 300,
+  eggInter: 500,
   slotMachine: 500,
   solver: 300,
   shooter: 350,
@@ -155,21 +155,14 @@ function loadGameState() {
   purchasedGames = saveData.purchasedGames || purchasedGames;
   activeToys = saveData.activeToys || [];
   
-  // Calculate elapsed time since last save
+  // Timers are paused when game is closed - do not apply elapsed time to stats
+  // Only update toy timers (they should still expire even when game is closed)
   if (saveData.lastSaveTime) {
     const lastSave = new Date(saveData.lastSaveTime);
     const now = new Date();
     const elapsedMs = now - lastSave;
-    const elapsedMinutes = elapsedMs / 60000;
     
-    console.log(`Elapsed time since last save: ${elapsedMinutes.toFixed(2)} minutes`);
-    
-    // Apply elapsed time to stats (only if egg is hatched)
-    if (isEggHatched && elapsedMinutes > 0) {
-      applyElapsedTime(elapsedMinutes);
-    }
-    
-    // Update toy timers based on elapsed time
+    // Update toy timers based on elapsed time (toys should expire)
     updateToyTimers(elapsedMs);
   }
   

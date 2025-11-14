@@ -39,7 +39,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const sellPetSprite = document.getElementById('sellPetSprite');
 
     function calcSellPrice(stage) {
-        const base = 250;
+        // Intermediate pets have a base price of $350, basic pets have $250
+        const intermediatePets = ['giromon', 'zurumon', 'yuramon', 'pixiemon', 'pagumon', 'gazimon', 'gizamon', 'tanemon', 'palmon', 'vegimon', 'mamemon', 'monzaemon', 'yukidarumon', 'flymon', 'piyomon', 'birdramon'];
+        const isIntermediate = intermediatePets.includes(shopPetType);
+        const base = isIntermediate ? 350 : 250;
         const multiplier = 1 + 0.2 * stage; // stage 1 = 1.2, stage 2 = 1.4, etc.
         return Math.floor(base * multiplier);
     }
