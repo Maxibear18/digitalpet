@@ -386,42 +386,54 @@ function createPetWindow() {
     
     // Small delay to ensure egg state is processed before sending other data
     setTimeout(() => {
+      // Check if window is still valid before sending messages
+      if (!petWindow || petWindow.isDestroyed()) return;
+      
       // Send all stored stats to the pet window
       Object.keys(storedStats).forEach(key => {
         const stat = storedStats[key];
-        petWindow.webContents.send('stats:load', {
-          key: key,
-          value: stat.value,
-          max: stat.max
-        });
+        if (petWindow && !petWindow.isDestroyed()) {
+          petWindow.webContents.send('stats:load', {
+            key: key,
+            value: stat.value,
+            max: stat.max
+          });
+        }
       });
       
       // Send pet type and evolution stage (must be sent after egg state)
-      petWindow.webContents.send('pet:typeUpdate', currentPetType);
-      petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+      if (petWindow && !petWindow.isDestroyed()) {
+        petWindow.webContents.send('pet:typeUpdate', currentPetType);
+        petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+      }
       
       // Send pet state flags
-      if (isPetSleeping) {
-        petWindow.webContents.send('pet:sleeping', true);
-      }
-      if (isPetExercising) {
-        petWindow.webContents.send('pet:exercising', true);
-      }
-      if (isPetSick) {
-        petWindow.webContents.send('pet:sick', true);
-      }
-      if (isPetDead) {
-        petWindow.webContents.send('pet:death', true);
+      if (petWindow && !petWindow.isDestroyed()) {
+        if (isPetSleeping) {
+          petWindow.webContents.send('pet:sleeping', true);
+        }
+        if (isPetExercising) {
+          petWindow.webContents.send('pet:exercising', true);
+        }
+        if (isPetSick) {
+          petWindow.webContents.send('pet:sick', true);
+        }
+        if (isPetDead) {
+          petWindow.webContents.send('pet:death', true);
+        }
       }
       
       // Force pet to show if hatched
-      if (isEggHatched) {
+      if (isEggHatched && petWindow && !petWindow.isDestroyed()) {
         petWindow.webContents.send('pet:forceShow');
       }
       
       // Restore active toys
       if (activeToys && activeToys.length > 0) {
         setTimeout(() => {
+          // Check if window is still valid before sending toy restore messages
+          if (!petWindow || petWindow.isDestroyed()) return;
+          
           const toyPaths = {
             pudding: 'sprites/toys/Pudding.png',
             bubblewand: 'sprites/toys/Bubble Wand.png',
@@ -432,11 +444,13 @@ function createPetWindow() {
           };
           
           activeToys.forEach(toy => {
-            petWindow.webContents.send('toy:restore', {
-              toyId: toy.toyId,
-              remainingTime: toy.remainingTime,
-              imagePath: toyPaths[toy.toyId] || ''
-            });
+            if (petWindow && !petWindow.isDestroyed()) {
+              petWindow.webContents.send('toy:restore', {
+                toyId: toy.toyId,
+                remainingTime: toy.remainingTime,
+                imagePath: toyPaths[toy.toyId] || ''
+              });
+            }
           });
         }, 200);
       }
