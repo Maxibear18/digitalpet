@@ -46,7 +46,7 @@ function getDefaultSaveData() {
         isPetSick: false,
         isPetDead: false,
         wasteCount: 0,
-        money: 1500,
+        money: 400,
         purchasedGames: {
             slotMachine: false,
             solver: false,
@@ -129,7 +129,7 @@ function saveGame(gameState) {
             isPetSick: gameState.isPetSick || false,
             isPetDead: gameState.isPetDead || false,
             wasteCount: gameState.wasteCount || 0,
-        money: gameState.money || 1500,
+        money: gameState.money || 400,
         purchasedGames: {
             slotMachine: gameState.purchasedGames?.slotMachine || false,
             solver: gameState.purchasedGames?.solver || false,

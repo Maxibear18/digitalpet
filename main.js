@@ -43,8 +43,8 @@ let currentEvolutionStage = 1; // Start at stage 1
 let currentPetType = 'botamon'; // Current pet type (botamon, poyomon, punimon, pitchmon)
 
 // Money system
-let money = 1500; // Starting money
-const MONEY_INCREMENT_INTERVAL = 60000; // 1 minute in milliseconds
+let money = 400; // Starting money
+const MONEY_INCREMENT_INTERVAL = 90000; // 1.5 minutes in milliseconds
 const MONEY_INCREMENT_AMOUNT = 50; // Amount money increases by
 let moneyIncrementIntervalId = null;
 
@@ -117,7 +117,7 @@ let healthDecayIntervalId = null;
 
 // Sickness check system - runs in main process so it persists even when windows are closed
 const SICKNESS_CHECK_INTERVAL = 300000; // 5 minutes in milliseconds
-const BASE_SICKNESS_CHANCE = 0.05; // 5% base chance
+const BASE_SICKNESS_CHANCE = 0.15; // 15% base chance
 const WASTE_SICKNESS_CHANCE_PER_ITEM = 0.10; // 10% per waste item
 let sicknessCheckIntervalId = null;
 
@@ -2284,7 +2284,7 @@ function startSicknessCheck() {
       return;
     }
     
-    // Calculate sickness chance: 5% base + 10% per waste item
+    // Calculate sickness chance: 15% base + 10% per waste item
     const sicknessChance = BASE_SICKNESS_CHANCE + (wasteCount * WASTE_SICKNESS_CHANCE_PER_ITEM);
     const randomValue = Math.random();
     

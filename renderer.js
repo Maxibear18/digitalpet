@@ -3496,10 +3496,10 @@ function stopSleeping() {
 // This ensures rest increases even when the window is minimized or unfocused
 
 // Waste spawning system
-const WASTE_SPAWN_INTERVAL = 180000; // 3 minutes in milliseconds
+const WASTE_SPAWN_INTERVAL = 150000; // 2.5 minutes in milliseconds (reduced by 30 seconds)
 const wasteSpritePath = 'sprites/items/waste.png';
 
-// Start waste spawning system - pet leaves waste every 3 minutes
+// Start waste spawning system - pet leaves waste every 2.5 minutes
 function startWasteSpawning() {
     // Clear any existing interval
     if (wasteSpawnIntervalId) {

@@ -1,6 +1,6 @@
 const { ipcRenderer } = require('electron');
 
-let currentMoney = 1500; // Will be updated from main process
+let currentMoney = 400; // Will be updated from main process
 let hasPet = false; // Track if pet exists (egg hatched)
 let hasEgg = false; // Track if player has purchased an egg
 let shopPetType = 'botamon';
