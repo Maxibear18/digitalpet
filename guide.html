@@ -97,7 +97,7 @@
                         </ul>
                     </li>
                     <li><strong>Exercising:</strong> Put your pet to exercise via Actions menu. Increases experience over time</li>
-                    <li><strong>Sick:</strong> Your pet can get sick if waste count reaches 3. When sick:
+                    <li><strong>Sick:</strong> Your pet has a chance to get sick every 5 minutes. When sick:
                         <ul>
                             <li>Health decreases (-10 every 1.5 minutes)</li>
                             <li>Feed medicine to cure them</li>
@@ -107,7 +107,13 @@
                 </ul>
                 
                 <h3>Waste System</h3>
-                <p>Your pet produces waste over time. If waste count reaches 3, your pet will get sick. Clean up waste by clicking on it in the pet window.</p>
+                <p>Your pet produces waste over time. Every 5 minutes, there's a chance your pet will get sick. The more waste that appears on screen, the higher the chance of getting sick:</p>
+                <ul>
+                    <li><strong>Base chance:</strong> 5% every 5 minutes</li>
+                    <li><strong>Additional chance:</strong> +10% for each waste item on screen</li>
+                    <li><strong>Example:</strong> With 2 waste items on screen, the chance is 5% + (2 × 10%) = 25%</li>
+                </ul>
+                <p>Clean up waste by clicking on it in the pet window to reduce the sickness chance!</p>
                 
                 <h3>Experience & Evolution</h3>
                 <p>Your pet gains experience from:</p>

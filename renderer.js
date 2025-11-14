@@ -2094,12 +2094,16 @@ function initializePet() {
             return;
         }
         
+        // If pet is dead and clicked, fade it away
+        if (!hasMoved && isDead && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
+            fadeAwayPet();
+        }
         // Only trigger petting if:
         // 1. It wasn't a drag
         // 2. Pet is not dead, sleeping, or exercising
         // 3. Click didn't hit food/medicine/medkit/waste
         // 4. Click hit an actual opaque pixel in the pet sprite
-        if (!hasMoved && !isDead && !isSleeping && !isExercising && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
+        else if (!hasMoved && !isDead && !isSleeping && !isExercising && !clickedItem && isClickOnPetPixel(e.clientX, e.clientY)) {
             handlePetClick();
         }
         // Reset tracking
@@ -2159,6 +2163,8 @@ function showPet() {
     pet.style.visibility = 'visible';
     pet.style.opacity = '1';
     pet.style.pointerEvents = 'auto';
+    pet.style.transition = ''; // Clear any fade transition
+    pet.style.cursor = ''; // Reset cursor
     // Start animation
     if (!animationRunning) {
         startAnimation();
@@ -2884,6 +2890,8 @@ function triggerDeath() {
         // Don't show Z's for death
         // Make sure Z's are removed if they exist
         removeSleepZs();
+        // Make pet clickable for fade away
+        pet.style.cursor = 'pointer';
     }
     
     // Notify main process
@@ -2891,7 +2899,77 @@ function triggerDeath() {
         ipcRenderer.send('pet:death', true);
     } catch (_) {}
     
-    console.log('Pet has died!');
+    console.log('Pet has died! Click on the pet to let it fade away.');
+}
+
+// Fade away pet when clicked after death
+function fadeAwayPet() {
+    if (!isDead || !pet) return;
+    
+    // Prevent multiple clicks during fade
+    if (pet.style.opacity === '0' || pet.style.transition) return;
+    
+    console.log('Fading away pet...');
+    
+    // Clear all items from screen
+    const container = document.querySelector('.pet-container');
+    if (container) {
+        // Remove all food items
+        foodItems.forEach(item => {
+            if (item && item.parentNode) {
+                item.parentNode.removeChild(item);
+            }
+        });
+        foodItems = [];
+        
+        // Remove all medicine items
+        medicineItems.forEach(item => {
+            if (item && item.parentNode) {
+                item.parentNode.removeChild(item);
+            }
+        });
+        medicineItems = [];
+        
+        // Remove all medkit items
+        medkitItems.forEach(item => {
+            if (item && item.parentNode) {
+                item.parentNode.removeChild(item);
+            }
+        });
+        medkitItems = [];
+        
+        // Remove all waste items
+        wasteItems.forEach(item => {
+            if (item && item.parentNode) {
+                item.parentNode.removeChild(item);
+            }
+        });
+        wasteItems = [];
+    }
+    
+    // Clear current targets
+    currentFoodEl = null;
+    currentMedicineEl = null;
+    currentMedkitEl = null;
+    
+    // Add fade transition
+    pet.style.transition = 'opacity 2s ease-out';
+    pet.style.opacity = '0';
+    
+    // After fade completes, remove pet and notify main process
+    setTimeout(() => {
+        // Hide the pet
+        if (pet) {
+            pet.style.display = 'none';
+        }
+        
+        // Notify main process that pet has been removed
+        try {
+            ipcRenderer.send('pet:fadedAway');
+        } catch (_) {}
+        
+        console.log('Pet has faded away. Buy a new egg to get another pet.');
+    }, 2000); // Match the transition duration
 }
 
 // Revive pet (for future implementation)

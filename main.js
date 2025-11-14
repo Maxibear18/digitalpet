@@ -1006,6 +1006,15 @@ ipcMain.on('egg:hatched', () => {
   isEggHatched = true;
   queueSave(); // Save after egg hatches
   console.log('Egg has hatched! Stats decay will now start.');
+  
+  // Restart decay systems (in case they were stopped when pet died)
+  startHungerDecay();
+  startHappinessDecay();
+  startRestDecay();
+  startHealthDecay(); // Start health decay (will only run if pet is sick)
+  startSicknessCheck(); // Start sickness check system
+  startLowStatsHealthDecay(); // Start health decay from low stats
+  
   // Open name dialog window
   openNameDialog();
   // Rebuild menu to enable Actions and Games
@@ -1193,6 +1202,96 @@ ipcMain.on('pet:death', (_event, dead) => {
     stopExerciseInterval();
     buildMenu();
   }
+});
+
+// Handle pet fading away (after death, when clicked)
+ipcMain.on('pet:fadedAway', () => {
+  console.log('Pet has faded away. Resetting pet state...');
+  
+  // Use same logic as selling pet for $0
+  const price = 0;
+  // Increase money (stays the same since price is 0)
+  money += price;
+  
+  // Reset pet flags
+  hasEgg = false;
+  isEggHatched = false;
+  isPetDead = false;
+  isPetSleeping = false;
+  isPetExercising = false;
+  isPetSick = false;
+  wasteCount = 0;
+  
+  // Reset evolution stage and set default type
+  currentEvolutionStage = 1;
+  currentPetType = 'botamon';
+  petName = 'Digital Pet';
+  
+  // Reset stored stats to defaults
+  const defaults = {
+    hunger: { value: 50, max: 100 },
+    rest: { value: 50, max: 100 },
+    health: { value: 50, max: 100 },
+    happiness: { value: 50, max: 100 },
+    experience: { value: 0, max: 300 }
+  };
+  Object.keys(defaults).forEach(key => {
+    storedStats[key] = defaults[key];
+  });
+  
+  // Stop all intervals by clearing them directly
+  if (hungerDecayIntervalId) {
+    clearInterval(hungerDecayIntervalId);
+    hungerDecayIntervalId = null;
+  }
+  if (happinessDecayIntervalId) {
+    clearInterval(happinessDecayIntervalId);
+    happinessDecayIntervalId = null;
+  }
+  stopRestDecay();
+  stopRestIncrement();
+  stopHealthIncrement();
+  stopHealthDecay();
+  stopSicknessCheck();
+  stopLowStatsHealthDecay();
+  stopExerciseInterval();
+  
+  // Rebuild menu (will disable actions since no pet)
+  buildMenu();
+  
+  // Notify windows of updates (same as sell pet)
+  if (petWindow && !petWindow.isDestroyed()) {
+    // Update money immediately in pet window
+    petWindow.webContents.send('money:update', money);
+    // Update stats in pet window
+    Object.keys(defaults).forEach(key => {
+      petWindow.webContents.send('stats:update', { key, value: defaults[key].value, max: defaults[key].max });
+    });
+    // Notify pet window to hide pet until egg is purchased again
+    petWindow.webContents.send('pet:stateUpdate', { isEggHatched: false, hasEgg: false });
+    // Also reset evolution stage/type
+    petWindow.webContents.send('pet:evolutionStage', currentEvolutionStage);
+    petWindow.webContents.send('pet:typeUpdate', currentPetType);
+    petWindow.setTitle('Digital Pet');
+  }
+  
+  if (shopWindow && !shopWindow.isDestroyed()) {
+    shopWindow.webContents.send('money:update', money);
+    shopWindow.webContents.send('pet:stateUpdate', { isEggHatched: false, hasEgg: false, petType: currentPetType, evolutionStage: currentEvolutionStage });
+  }
+  
+  if (statsWindow && !statsWindow.isDestroyed()) {
+    Object.keys(defaults).forEach(key => {
+      if (key !== 'experience') {
+        statsWindow.webContents.send('stats:update', { key, value: defaults[key].value, max: defaults[key].max });
+      }
+    });
+  }
+  
+  // Save the reset state
+  queueSave();
+  
+  console.log('Pet state reset. Player can now buy a new egg.');
 });
 
 // Handle pet evolution
